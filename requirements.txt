@@ -1,0 +1,67 @@
+# NEMA Store - System Requirements
+
+## Backend Dependencies (Node.js)
+- Node.js >= 16.0.0
+- apollo-server >= 3.0.0
+- graphql >= 16.0.0
+- uuid >= 9.0.0
+
+## Frontend Dependencies (React)
+- React >= 18.0.0
+- @apollo/client >= 3.7.0
+- graphql >= 16.0.0
+
+## Development Tools
+- npm >= 8.0.0 or yarn >= 1.22.0
+
+## Installation Commands
+
+### Backend Setup:
+```bash
+cd mini-unchained-server
+npm install apollo-server graphql uuid
+```
+
+### Frontend Setup:
+```bash
+cd mini-unchained-client
+npm install @apollo/client graphql
+```
+
+## Running the Application
+
+### Start Backend Server:
+```bash
+cd mini-unchained-server
+node server.js
+```
+Server runs on: http://localhost:4000
+GraphQL Playground: http://localhost:4000
+
+### Start Frontend Client:
+```bash
+cd mini-unchained-client
+npm start
+```
+Client runs on: http://localhost:3000
+
+## Features Included
+- React 19.x frontend with NEMA branding
+- GraphQL backend with Apollo Server
+- 12 NEMA standards/documents as products
+- Shopping cart with add/remove/edit functionality
+- Checkout process with order confirmation
+- Real-time cart updates
+- Professional NEMA design matching official website
+- Complete GraphQL testing guide
+
+## Browser Support
+- Chrome >= 90
+- Firefox >= 88
+- Safari >= 14
+- Edge >= 90
+
+## System Requirements
+- RAM: 4GB minimum, 8GB recommended
+- Storage: 1GB free space
+- Network: Internet connection for dependencies
