@@ -1,0 +1,109 @@
+.header {
+  background-color: #2E5BBA !important;
+  color: white;
+  padding: 0.75rem 0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.header-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+.header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.header-logo-section {
+  display: flex;
+  align-items: center;
+}
+
+.header-logo {
+  height: 40px;
+  margin-right: 1rem;
+}
+
+.header-title {
+  font-size: 1rem;
+  font-weight: bold;
+}
+
+.header-subtitle {
+  font-size: 0.8rem;
+  opacity: 0.9;
+}
+
+.header-links {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  font-size: 0.8rem;
+}
+
+.header-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.header-search-section {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.header-category {
+  background-color: rgba(255, 255, 255, 0.1);
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.header-search {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.header-search-input {
+  padding: 0.5rem;
+  border: none;
+  border-radius: 4px 0 0 4px;
+  width: 300px;
+  font-size: 0.9rem;
+}
+
+.header-search-select {
+  padding: 0.5rem;
+  border: none;
+  background-color: white;
+  font-size: 0.9rem;
+}
+
+.header-search-btn {
+  padding: 0.5rem 1rem;
+  background-color: #1a365d;
+  color: white;
+  border: none;
+  border-radius: 0 4px 4px 0;
+  cursor: pointer;
+}
+
+.header-account-section {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.header-account {
+  font-size: 0.9rem;
+}
+
+.header-cart {
+  font-size: 1.2rem;
+}

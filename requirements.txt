@@ -19,6 +19,7 @@
 ### Backend Setup:
 ```bash
 cd mini-unchained-server
+ npm i @apollo/server
 npm install apollo-server graphql uuid
 ```
 
