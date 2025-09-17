@@ -1,11 +1,11 @@
-// server.js
-import express from "express";
-import { createServer } from "http";
-import cors from "cors";
-import { graphqlHTTP } from "express-graphql";
-import { buildSchema } from "graphql";
+const express = require("express");
+const cors = require("cors");
+const { graphqlHTTP } = require("express-graphql");
+const { buildSchema } = require("graphql");
+const { v4: uuidv4 } = require("uuid");
+const cosmosDB = require("./database");
 
-// 1. Define GraphQL schema
+// ✅ GraphQL Schema
 const schema = buildSchema(`
   type Product {
     id: ID!
@@ -17,20 +17,30 @@ const schema = buildSchema(`
   type CartItem {
     productId: ID!
     quantity: Int!
-    product: Product!
+    product: Product
   }
 
   type Cart {
     id: ID!
     items: [CartItem!]!
     total: Float!
-    status: String
-    createdAt: String
+    status: String!
+    createdAt: String!
+  }
+
+  type Order {
+    id: ID!
+    items: [CartItem!]!
+    total: Float!
+    status: String!
+    createdAt: String!
   }
 
   type Query {
     products: [Product!]!
     cart(id: ID!): Cart
+    orders: [Order!]!
+    order(id: ID!): Order
   }
 
   type Mutation {
@@ -39,306 +49,178 @@ const schema = buildSchema(`
     removeFromCart(cartId: ID!, productId: ID!): Cart!
     updateCartItem(cartId: ID!, productId: ID!, quantity: Int!): Cart!
     clearCart(cartId: ID!): Cart!
-    checkout(cartId: ID!): Cart!
+    checkout(cartId: ID!): Order!
   }
 `);
 
-// 2. Fake data and resolvers
-// let products = [
-//   { id: "1", title: "Product One", description: "Description One", price: 10 },
-//   { id: "2", title: "Product Two", description: "Description Two", price: 20 },
-// ];
+// ✅ Helper: calculate total
+async function calculateCartTotal(cart) {
+  let total = 0;
+  for (const item of cart.items) {
+    const product = await cosmosDB.getProductById(item.productId);
+    if (product) {
+      total += product.price * item.quantity;
+    }
+  }
+  return total;
+}
 
-let products = [
-  { id: "p1", title: "ANSI/NEMA MG 00001-2024", description: "Motors and Generators", price: 931.00 },
-  { id: "p2", title: "NEMA TS 10-2020", description: "Traffic Controller Assemblies with NTCIP Requirements", price: 219.00 },
-  { id: "p3", title: "NEMA WC 70-2018", description: "Power Cables Rated 2000 Volts or Less for the Distribution of Electrical Energy", price: 285.00 },
-  { id: "p4", title: "NEMA AB 1-2016", description: "Molded Case Circuit Breakers, Molded Case Switches, and Circuit Breaker Enclosures", price: 395.00 },
-  { id: "p5", title: "NEMA SS 1-2013", description: "Enclosures for Industrial Controls and Systems", price: 175.00 },
-  { id: "p6", title: "NEMA FB 1-2014", description: "Fittings, Cast Metal Boxes, and Conduit Bodies for Conduit and Cable Assemblies", price: 145.00 },
-  { id: "p7", title: "NEMA TC 2-2013", description: "Electrical Plastic Tubing (EPT) and Conduit Schedule 40 and 80", price: 125.00 },
-  { id: "p8", title: "NEMA ICS 1-2000", description: "Industrial Control and Systems: General Requirements", price: 245.00 },
-  { id: "p9", title: "NEMA SB 2-2016", description: "Switchboards", price: 315.00 },
-  { id: "p10", title: "NEMA WD 6-2016", description: "Wiring Devices - Dimensional Requirements", price: 165.00 },
-  { id: "p11", title: "NEMA C29.1-2018", description: "Test Methods for Electrical Power Insulators", price: 425.00 },
-  { id: "p12", title: "NEMA PV 1-2016", description: "Photovoltaic (PV) Power Systems", price: 195.00 }
-];
-
-let carts = {};
-let cartCounter = 1;
-
+// ✅ Root Resolvers
 const root = {
-  products: () => products,
+  // Queries
+  products: async () => await cosmosDB.getAllProducts(),
+  cart: async ({ id }) => await cosmosDB.getCartById(id),
+  orders: async () => await cosmosDB.getAllOrders(),
+  order: async ({ id }) => await cosmosDB.getOrderById(id),
 
-  cart: ({ id }) => carts[id] || { id, items: [], total: 0, status: "OPEN" },
-
-  createCart: () => {
-    const id = String(cartCounter++);
-    carts[id] = { id, items: [], total: 0, status: "OPEN", createdAt: new Date().toISOString() };
-    return carts[id];
+  // CartItem resolver -> fetch product by productId
+  CartItem: {
+    product: async (parent) => {
+      return await cosmosDB.getProductById(parent.productId);
+    },
   },
 
-  addToCart: ({ cartId, productId, quantity }) => {
-    const cart = carts[cartId];
-    const product = products.find((p) => p.id === productId);
-    if (!cart || !product) throw new Error("Cart or product not found");
+// Queries
+cart: async ({ id }) => {
+  const cart = await cosmosDB.getCartById(id);
+  return enrichCart(cart);
+},
 
-    const existingItem = cart.items.find((i) => i.productId === productId);
-    if (existingItem) existingItem.quantity += quantity;
-    else cart.items.push({ productId, quantity, product });
+// Mutations
+createCart: async () => {
+  const cart = {
+    id: uuidv4(),
+    items: [],
+    total: 0,
+    status: "active",
+    createdAt: new Date().toISOString(),
+  };
+  const created = await cosmosDB.createCart(cart);
+  return enrichCart(created);
+},
 
-    cart.total = cart.items.reduce((sum, i) => sum + i.quantity * i.product.price, 0);
-    return cart;
-  },
+addToCart: async ({ cartId, productId, quantity }) => {
+  const cart = await cosmosDB.getCartById(cartId);
+  if (!cart) throw new Error("Cart not found");
 
-  removeFromCart: ({ cartId, productId }) => {
-    const cart = carts[cartId];
-    if (!cart) throw new Error("Cart not found");
+  const product = await cosmosDB.getProductById(productId);
+  if (!product) throw new Error("Product not found");
 
+  const existing = cart.items.find((i) => i.productId === productId);
+  if (existing) {
+    existing.quantity += quantity;
+  } else {
+    cart.items.push({ productId, quantity });
+  }
+
+  cart.total = await calculateCartTotal(cart);
+  const updated = await cosmosDB.updateCart(cart);
+
+  return enrichCart(updated); // ✅ important
+},
+
+removeFromCart: async ({ cartId, productId }) => {
+  const cart = await cosmosDB.getCartById(cartId);
+  if (!cart) throw new Error("Cart not found");
+
+  cart.items = cart.items.filter((i) => i.productId !== productId);
+  cart.total = await calculateCartTotal(cart);
+
+  const updated = await cosmosDB.updateCart(cart);
+  return enrichCart(updated); // ✅
+},
+
+updateCartItem: async ({ cartId, productId, quantity }) => {
+  const cart = await cosmosDB.getCartById(cartId);
+  if (!cart) throw new Error("Cart not found");
+
+  if (quantity <= 0) {
     cart.items = cart.items.filter((i) => i.productId !== productId);
-    cart.total = cart.items.reduce((sum, i) => sum + i.quantity * i.product.price, 0);
-    return cart;
-  },
+  } else {
+    const existing = cart.items.find((i) => i.productId === productId);
+    if (existing) {
+      existing.quantity = quantity;
+    } else {
+      cart.items.push({ productId, quantity });
+    }
+  }
 
-  updateCartItem: ({ cartId, productId, quantity }) => {
-    const cart = carts[cartId];
+  cart.total = await calculateCartTotal(cart);
+  const updated = await cosmosDB.updateCart(cart);
+
+  return enrichCart(updated); // ✅
+},
+
+clearCart: async ({ cartId }) => {
+  const cart = await cosmosDB.getCartById(cartId);
+  if (!cart) throw new Error("Cart not found");
+
+  cart.items = [];
+  cart.total = 0;
+
+  const updated = await cosmosDB.updateCart(cart);
+  return enrichCart(updated); // ✅
+},
+
+  checkout: async ({ cartId }) => {
+    const cart = await cosmosDB.getCartById(cartId);
     if (!cart) throw new Error("Cart not found");
+    if (cart.items.length === 0) throw new Error("Cart is empty");
 
-    const item = cart.items.find((i) => i.productId === productId);
-    if (item) item.quantity = quantity;
-    cart.total = cart.items.reduce((sum, i) => sum + i.quantity * i.product.price, 0);
-    return cart;
-  },
+    const total = await calculateCartTotal(cart);
 
-  clearCart: ({ cartId }) => {
-    const cart = carts[cartId];
-    if (!cart) throw new Error("Cart not found");
+    const order = {
+      id: uuidv4(),
+      items: cart.items,
+      total,
+      status: "completed",
+      createdAt: new Date().toISOString(),
+    };
 
-    cart.items = [];
-    cart.total = 0;
-    return cart;
-  },
+    await cosmosDB.createOrder(order);
 
-  checkout: ({ cartId }) => {
-    const cart = carts[cartId];
-    if (!cart) throw new Error("Cart not found");
+    cart.status = "completed";
+    await cosmosDB.updateCart(cart);
 
-    cart.status = "COMPLETED";
-    cart.createdAt = new Date().toISOString();
-    return cart;
+    return order;
   },
 };
 
-// 3. Setup Express
-const app = express();
+// ✅ Start server
+async function start() {
+  await cosmosDB.initialize();
 
-// 4. Enable CORS for frontend
-app.use(cors({ origin: "http://localhost:3000" }));
+  const app = express();
+  app.use(cors({ origin: "http://localhost:3000" }));
 
-// 5. GraphQL endpoint
-app.use(
-  "/graphql",
-  graphqlHTTP({
-    schema,
-    rootValue: root,
-    graphiql: true, // Optional for testing
-  })
-);
+  app.use(
+    "/graphql",
+    graphqlHTTP({
+      schema,
+      rootValue: root,
+      graphiql: true,
+    })
+  );
 
-// 6. Start server
-const PORT = 4000;
-app.listen(PORT, () => console.log(`Server running at http://localhost:${PORT}/graphql`));
+  const PORT = 4000;
+  app.listen(PORT, () =>
+    console.log(`🚀 GraphQL server running at http://localhost:${PORT}/graphql`)
+  );
+}
 
+// ✅ Helper: enrich cart items with product details
+async function enrichCart(cart) {
+  if (!cart) return null;
+  const enrichedItems = [];
+  for (const item of cart.items) {
+    const product = await cosmosDB.getProductById(item.productId);
+    enrichedItems.push({
+      productId: item.productId,
+      quantity: item.quantity,
+      product: product || null, // attach product details
+    });
+  }
+  return { ...cart, items: enrichedItems };
+}
 
-
-
-// // server.js
-// const { ApolloServer, gql } = require("apollo-server");
-// const { v4: uuid } = require("uuid");
-
-// /**
-//  * In-memory data stores (for learning/demo).
-//  * Replace these with a real DB in production.
-//  */
-// const products = [
-//   { id: "p1", title: "ANSI/NEMA MG 00001-2024", description: "Motors and Generators", price: 931.00 },
-//   { id: "p2", title: "NEMA TS 10-2020", description: "Traffic Controller Assemblies with NTCIP Requirements", price: 219.00 },
-//   { id: "p3", title: "NEMA WC 70-2018", description: "Power Cables Rated 2000 Volts or Less for the Distribution of Electrical Energy", price: 285.00 },
-//   { id: "p4", title: "NEMA AB 1-2016", description: "Molded Case Circuit Breakers, Molded Case Switches, and Circuit Breaker Enclosures", price: 395.00 },
-//   { id: "p5", title: "NEMA SS 1-2013", description: "Enclosures for Industrial Controls and Systems", price: 175.00 },
-//   { id: "p6", title: "NEMA FB 1-2014", description: "Fittings, Cast Metal Boxes, and Conduit Bodies for Conduit and Cable Assemblies", price: 145.00 },
-//   { id: "p7", title: "NEMA TC 2-2013", description: "Electrical Plastic Tubing (EPT) and Conduit Schedule 40 and 80", price: 125.00 },
-//   { id: "p8", title: "NEMA ICS 1-2000", description: "Industrial Control and Systems: General Requirements", price: 245.00 },
-//   { id: "p9", title: "NEMA SB 2-2016", description: "Switchboards", price: 315.00 },
-//   { id: "p10", title: "NEMA WD 6-2016", description: "Wiring Devices - Dimensional Requirements", price: 165.00 },
-//   { id: "p11", title: "NEMA C29.1-2018", description: "Test Methods for Electrical Power Insulators", price: 425.00 },
-//   { id: "p12", title: "NEMA PV 1-2016", description: "Photovoltaic (PV) Power Systems", price: 195.00 }
-// ];
-
-// const carts = [];   // { id, items: [{ productId, quantity }], status }
-// const orders = [];  // { id, items, total, createdAt, status }
-
-// const typeDefs = gql`
-//   type Product {
-//     id: ID!
-//     title: String!
-//     description: String
-//     price: Float!
-//   }
-
-//   type CartItem {
-//     productId: ID!
-//     quantity: Int!
-//     product: Product
-//   }
-
-//   type Cart {
-//     id: ID!
-//     items: [CartItem!]!
-//     total: Float!
-//     status: String!
-//   }
-
-//   type Order {
-//     id: ID!
-//     items: [CartItem!]!
-//     total: Float!
-//     status: String!
-//     createdAt: String!
-//   }
-
-//   type Query {
-//     products: [Product!]!
-//     cart(id: ID!): Cart
-//     orders: [Order!]!
-//   }
-
-//   type Mutation {
-//     createCart: Cart!
-//     addToCart(cartId: ID!, productId: ID!, quantity: Int!): Cart!
-//     removeFromCart(cartId: ID!, productId: ID!): Cart!
-//     updateCartItem(cartId: ID!, productId: ID!, quantity: Int!): Cart!
-//     clearCart(cartId: ID!): Cart!
-//     checkout(cartId: ID!): Order!
-//   }
-// `;
-
-// const resolvers = {
-//   Query: {
-//     products: () => products,
-//     cart: (_, { id }) => carts.find(c => c.id === id) || null,
-//     orders: () => orders,
-//   },
-
-//   Mutation: {
-//     createCart: () => {
-//       const id = uuid();
-//       const cart = { id, items: [], status: "active" };
-//       carts.push(cart);
-//       return cart;
-//     },
-
-//     addToCart: (_, { cartId, productId, quantity }) => {
-//       const cart = carts.find(c => c.id === cartId);
-//       if (!cart) throw new Error("Cart not found");
-//       if (cart.status !== "active") throw new Error("Cart is not active");
-
-//       const product = products.find(p => p.id === productId);
-//       if (!product) throw new Error("Product not found");
-
-//       const existing = cart.items.find(i => i.productId === productId);
-//       if (existing) {
-//         existing.quantity += quantity;
-//       } else {
-//         cart.items.push({ productId, quantity });
-//       }
-
-//       return cart;
-//     },
-
-//     removeFromCart: (_, { cartId, productId }) => {
-//       const cart = carts.find(c => c.id === cartId);
-//       if (!cart) throw new Error("Cart not found");
-//       if (cart.status !== "active") throw new Error("Cart is not active");
-
-//       cart.items = cart.items.filter(item => item.productId !== productId);
-//       return cart;
-//     },
-
-//     updateCartItem: (_, { cartId, productId, quantity }) => {
-//       const cart = carts.find(c => c.id === cartId);
-//       if (!cart) throw new Error("Cart not found");
-//       if (cart.status !== "active") throw new Error("Cart is not active");
-
-//       const product = products.find(p => p.id === productId);
-//       if (!product) throw new Error("Product not found");
-
-//       if (quantity <= 0) {
-//         // Remove item if quantity is 0 or negative
-//         cart.items = cart.items.filter(item => item.productId !== productId);
-//       } else {
-//         const existing = cart.items.find(i => i.productId === productId);
-//         if (existing) {
-//           existing.quantity = quantity;
-//         } else {
-//           cart.items.push({ productId, quantity });
-//         }
-//       }
-
-//       return cart;
-//     },
-
-//     clearCart: (_, { cartId }) => {
-//       const cart = carts.find(c => c.id === cartId);
-//       if (!cart) throw new Error("Cart not found");
-//       if (cart.status !== "active") throw new Error("Cart is not active");
-
-//       cart.items = [];
-//       return cart;
-//     },
-
-//     checkout: (_, { cartId }) => {
-//       const cart = carts.find(c => c.id === cartId);
-//       if (!cart) throw new Error("Cart not found");
-//       if (cart.items.length === 0) throw new Error("Cart is empty");
-//       if (cart.status !== "active") throw new Error("Cart already checked out");
-
-//       // compute total (server-side)
-//       const total = cart.items.reduce((sum, item) => {
-//         const p = products.find(prod => prod.id === item.productId);
-//         return sum + (p.price * item.quantity);
-//       }, 0);
-
-//       const order = {
-//         id: uuid(),
-//         items: JSON.parse(JSON.stringify(cart.items)), // clone
-//         total,
-//         status: "created",
-//         createdAt: new Date().toISOString()
-//       };
-
-//       orders.push(order);
-//       cart.status = "completed"; // lock the cart
-//       return order;
-//     }
-//   },
-
-//   // computed fields / nested resolvers
-//   Cart: {
-//     total: (cart) =>
-//       cart.items.reduce((sum, item) => {
-//         const p = products.find(prod => prod.id === item.productId);
-//         return sum + (p ? p.price * item.quantity : 0);
-//       }, 0)
-//   },
-
-//   CartItem: {
-//     product: (item) => products.find(p => p.id === item.productId) || null
-//   }
-// };
-
-// const server = new ApolloServer({ typeDefs, resolvers });
-
-// server.listen({ port: 4000 }).then(({ url }) => {
-//   console.log(`🚀 Server ready at ${url}`);
-// });
+start();

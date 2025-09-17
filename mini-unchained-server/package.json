@@ -2,7 +2,6 @@
   "name": "mini-unchained-server",
   "version": "1.0.0",
   "description": "",
-  "type": "module",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -12,7 +11,9 @@
   "license": "ISC",
   "dependencies": {
     "@apollo/server": "^5.0.0",
+    "@azure/cosmos": "^4.5.1",
     "apollo-server": "^3.13.0",
+    "dotenv": "^17.2.2",
     "express-graphql": "^0.12.0",
     "graphql": "^16.11.0",
     "uuid": "^8.3.2"
