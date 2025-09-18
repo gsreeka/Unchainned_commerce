@@ -7,11 +7,12 @@ import {
 } from "@apollo/client";
 import { ApolloProvider } from "@apollo/client/react";
 import { useQuery, useMutation } from "@apollo/client/react";
-import AdminPanel from './components/AdminPanel';
-import Cart from './components/Cart';
-import ProductCard from './components/ProductCard';
-import ProductDetailModal from './components/ProductDetailModal';
-import Notification from './components/Notification';
+import AdminPanel from './components/AdminPanel/AdminPanel';
+import Cart from './components/Cart/Cart';
+import ProductCard from './components/ProductCard/ProductCard';
+import ProductDetailModal from './components/ProductDetailModal/ProductDetailModal';
+import Notification from './components/Notification/Notification';
+import './App.css';
 
 const httpLink = createHttpLink({
   uri: "http://localhost:4001",
@@ -253,31 +254,17 @@ const MainApp = () => {
 
   console.log('MainApp render - loading:', loading, 'error:', error, 'data:', data, 'categoriesData:', categoriesData);
   
-  if (loading) return <div style={{ textAlign: 'center', padding: '2rem' }}>Loading...</div>;
-  if (error) return <div style={{ textAlign: 'center', padding: '2rem', color: 'red' }}>Error: {error.message}</div>;
+  if (loading) return <div className="loading-container">Loading...</div>;
+  if (error) return <div className="error-container">Error: {error.message}</div>;
 
   if (showAdmin) {
     return (
-      <div>
-        <div style={{ 
-          background: '#2E5BBA', 
-          color: 'white', 
-          padding: '1rem',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center'
-        }}>
-          <h1 style={{ margin: 0 }}>NEMA Admin Panel</h1>
+      <div className="admin-container">
+        <div className="admin-header">
+          <h1 className="admin-title">NEMA Admin Panel</h1>
           <button
             onClick={() => setShowAdmin(false)}
-            style={{
-              background: 'rgba(255,255,255,0.2)',
-              color: 'white',
-              border: '1px solid rgba(255,255,255,0.3)',
-              padding: '0.5rem 1rem',
-              borderRadius: '4px',
-              cursor: 'pointer'
-            }}
+            className="admin-back-btn"
           >
             Back to Store
           </button>
@@ -289,70 +276,41 @@ const MainApp = () => {
 
   if (order) {
     return (
-      <div style={{ backgroundColor: '#f7fafc', minHeight: '100vh' }}>
+      <div className="app-container">
         <Header onShowAdmin={() => setShowAdmin(true)} />
-        <div style={{ 
-          backgroundColor: 'white', 
-          border: '1px solid #ddd', 
-          borderRadius: '4px', 
-          boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-          maxWidth: '500px',
-          margin: '2rem auto',
-          textAlign: 'center'
-        }}>
-          <div style={{ 
-            backgroundColor: '#28a745', 
-            color: 'white', 
-            padding: '1rem', 
-            fontSize: '1.2rem',
-            fontWeight: 'bold'
-          }}>
+        <div className="order-container">
+          <div className="order-header">
             ORDER CONFIRMED
           </div>
           
-          <div style={{ padding: '2rem' }}>
-            <div style={{ marginBottom: '1.5rem' }}>
-              <h3 style={{ color: '#2E5BBA', marginBottom: '0.5rem' }}>
+          <div className="order-content">
+            <div className="order-thank-you">
+              <h3 className="order-title">
                 Thank you for your order!
               </h3>
-              <p style={{ color: '#666', fontSize: '0.9rem' }}>
+              <p className="order-subtitle">
                 Your NEMA standards have been processed successfully.
               </p>
             </div>
             
-            <div style={{ 
-              backgroundColor: '#f8f9fa', 
-              padding: '1rem', 
-              borderRadius: '4px',
-              marginBottom: '1.5rem',
-              textAlign: 'left'
-            }}>
-              <div style={{ marginBottom: '0.5rem' }}>
+            <div className="order-details">
+              <div className="order-detail-item">
                 <strong>Order ID:</strong> {order.id}
               </div>
-              <div style={{ marginBottom: '0.5rem' }}>
+              <div className="order-detail-item">
                 <strong>Total:</strong> ${order.total.toFixed(2)}
               </div>
-              <div style={{ marginBottom: '0.5rem' }}>
+              <div className="order-detail-item">
                 <strong>Status:</strong> {order.status}
               </div>
-              <div>
+              <div className="order-detail-item">
                 <strong>Date:</strong> {new Date(order.createdAt).toLocaleDateString()}
               </div>
             </div>
             
             <button 
               onClick={() => setOrder(null)}
-              style={{
-                backgroundColor: '#2E5BBA',
-                color: 'white',
-                padding: '0.75rem 1.5rem',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                fontSize: '1rem',
-                fontWeight: '500'
-              }}
+              className="continue-shopping-btn"
             >
               Continue Shopping
             </button>
@@ -363,7 +321,7 @@ const MainApp = () => {
   }
 
   return (
-    <div style={{ backgroundColor: '#f7fafc', minHeight: '100vh' }}>
+    <div className="app-container">
       <Header 
         onShowAdmin={() => setShowAdmin(true)} 
         onShowCart={() => setShowCart(true)}
@@ -372,7 +330,7 @@ const MainApp = () => {
         onCategoryChange={handleCategoryChange}
       />
       
-      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 1rem' }}>
+      <div className="main-content">
         <ProductsList 
           products={filteredProducts} 
           onAddToCart={handleAddToCart} 
@@ -415,170 +373,83 @@ function Header({ onShowAdmin, onShowCart, categories, selectedCategory, onCateg
   return (
     <header>
       {/* Top Blue Section */}
-      <div style={{
-        backgroundColor: '#2E5BBA',
-        color: 'white',
-        padding: '1rem 0'
-      }}>
-        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 1rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            {/* Left side - NEMA Logo and Text */}
-            <div style={{ display: 'flex', alignItems: 'center' }}>
-              <img 
-                src="/image.png" 
-                alt="NEMA Logo" 
-                style={{ 
-                  height: '50px',
-                  width: 'auto',
-                  marginRight: '1rem'
-                }}
-              />
-              <div>
-                <div style={{ 
-                  fontSize: '1.3rem', 
-                  fontWeight: 'bold',
-                  fontStyle: 'italic',
-                  lineHeight: '1.1'
-                }}>
-                  The National Electrical Manufacturers
-                </div>
-                <div style={{ 
-                  fontSize: '1.3rem', 
-                  fontWeight: 'bold',
-                  fontStyle: 'italic',
-                  lineHeight: '1.1'
-                }}>
-                  Association
-                </div>
-                
+      <div className="header-top">
+        <div className="header-top-content">
+          {/* Left side - NEMA Logo and Text */}
+          <div className="header-left">
+            <img 
+              src="/image.png" 
+              alt="NEMA Logo" 
+              className="nema-logo"
+            />
+            <div>
+              <div className="nema-text">
+                The National Electrical Manufacturers
+              </div>
+              <div className="nema-text">
+                Association
               </div>
             </div>
-            
-            {/* Right side - Navigation */}
-            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', fontSize: '0.8rem' }}>
-              <button
-                onClick={onShowAdmin}
-                style={{
-                  background: 'rgba(255,255,255,0.2)',
-                  color: 'white',
-                  border: '1px solid rgba(255,255,255,0.3)',
-                  padding: '0.4rem 0.8rem',
-                  borderRadius: '3px',
-                  cursor: 'pointer',
-                  fontSize: '0.75rem'
-                }}
-              >
-                Admin Panel
-              </button>
-              <span>Store Home</span>
-              <span style={{ opacity: 0.7 }}>|</span>
-              <span>Help & Support</span>
-              <span style={{ opacity: 0.7 }}>|</span>
-              <span>Sign In</span>
-            </div>
+          </div>
+          
+          {/* Right side - Navigation */}
+          <div className="header-nav">
+            <button
+              onClick={onShowAdmin}
+              className="admin-panel-btn"
+            >
+              Admin Panel
+            </button>
+            <span>Store Home</span>
+            <span className="nav-separator">|</span>
+            <span>Help & Support</span>
+            <span className="nav-separator">|</span>
+            <span>Sign In</span>
           </div>
         </div>
       </div>
       
       {/* Bottom Gray Section */}
-      <div style={{
-        backgroundColor: '#e5e7eb',
-        padding: '0.75rem 0',
-        borderBottom: '1px solid #d1d5db'
-      }}>
-        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 1rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            {/* Left side - Shop and Search */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-              <select 
-                value={selectedCategory}
-                onChange={(e) => onCategoryChange(e.target.value)}
-                style={{ 
-                  backgroundColor: 'white', 
-                  padding: '0.5rem 1rem', 
-                  borderRadius: '4px',
-                  fontSize: '0.9rem',
-                  fontWeight: '600',
-                  cursor: 'pointer',
-                  border: '1px solid #d1d5db',
-                  color: '#374151',
-                  outline: 'none',
-                  minWidth: '160px'
-                }}>
-                <option value="">SHOP by Category</option>
-                {categories.map((category) => (
-                  <option key={category.id} value={category.id}>
-                    {category.name}
-                  </option>
-                ))}
-              </select>
-              
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                background: 'white',
-                borderRadius: '4px',
-                border: '1px solid #d1d5db',
-                overflow: 'hidden',
-                minWidth: '400px'
-              }}>
-                <input 
-                  type="text" 
-                  placeholder="Search NEMA"
-                  style={{
-                    flex: 1,
-                    border: 'none',
-                    padding: '0.6rem 1rem',
-                    fontSize: '0.9rem',
-                    outline: 'none',
-                    color: '#374151'
-                  }}
-                />
-                <button style={{
-                  background: '#2E5BBA',
-                  color: 'white',
-                  border: 'none',
-                  padding: '0.6rem 1rem',
-                  cursor: 'pointer',
-                  fontSize: '0.9rem'
-                }}>
-                  🔍
-                </button>
-              </div>
-            </div>
+      <div className="header-bottom">
+        <div className="header-bottom-content">
+          {/* Left side - Shop and Search */}
+          <div className="header-left-controls">
+            <select 
+              value={selectedCategory}
+              onChange={(e) => onCategoryChange(e.target.value)}
+              className="category-select"
+            >
+              <option value="">SHOP by Category</option>
+              {categories.map((category) => (
+                <option key={category.id} value={category.id}>
+                  {category.name}
+                </option>
+              ))}
+            </select>
             
-            {/* Right side - Account and Cart */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-              <div style={{ 
-                background: 'white', 
-                padding: '0.5rem 1rem', 
-                borderRadius: '4px',
-                fontSize: '0.9rem',
-                cursor: 'pointer',
-                border: '1px solid #d1d5db',
-                fontWeight: '600',
-                color: '#374151'
-              }}>
-                MY ACCOUNT ▼
-              </div>
-              <button
-                onClick={onShowCart}
-                style={{
-                  background: 'white',
-                  border: '1px solid #d1d5db',
-                  color: '#374151',
-                  cursor: 'pointer',
-                  fontSize: '1.2rem',
-                  padding: '0.5rem 1rem',
-                  borderRadius: '4px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.25rem'
-                }}
-              >
-                🛒 -
+            <div className="search-container">
+              <input 
+                type="text" 
+                placeholder="Search NEMA"
+                className="search-input"
+              />
+              <button className="search-btn">
+                🔍
               </button>
             </div>
+          </div>
+          
+          {/* Right side - Account and Cart */}
+          <div className="header-right-controls">
+            <div className="my-account-btn">
+              MY ACCOUNT ▼
+            </div>
+            <button
+              onClick={onShowCart}
+              className="cart-btn"
+            >
+              🛒 -
+            </button>
           </div>
         </div>
       </div>
@@ -589,26 +460,12 @@ function Header({ onShowAdmin, onShowCart, categories, selectedCategory, onCateg
 // Products List Component
 function ProductsList({ products, onAddToCart, onProductClick }) {
   return (
-    <div style={{ backgroundColor: 'white', padding: '1rem 0' }}>
-      <div style={{ 
-        background: '#2E5BBA', 
-        color: 'white', 
-        padding: '0.75rem 1.5rem', 
-        marginBottom: '2rem',
-        fontSize: '1.2rem',
-        fontWeight: 'bold',
-        letterSpacing: '0.5px'
-      }}>
+    <div className="products-container">
+      <div className="products-header">
         MOST POPULAR PRODUCTS
       </div>
       
-      <div style={{ 
-        display: 'grid', 
-        gap: '1.5rem', 
-        gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-        padding: '2rem 0',
-        justifyItems: 'center'
-      }}>
+      <div className="products-grid">
         {products.map((product) => (
           <ProductCard 
             key={product.id} 

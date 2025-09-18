@@ -1,5 +1,6 @@
 import React from 'react';
 import { useQuery, useMutation, gql } from '@apollo/client';
+import './Cart.css';
 
 const GET_CART = gql`
   query GetCart($id: ID!) {

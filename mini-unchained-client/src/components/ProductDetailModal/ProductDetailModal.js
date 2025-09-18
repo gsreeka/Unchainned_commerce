@@ -1,4 +1,5 @@
 import React from 'react';
+import './ProductDetailModal.css';
 
 const ProductDetailModal = ({ product, isOpen, onClose }) => {
   if (!isOpen || !product) return null;
