@@ -7,9 +7,14 @@ import {
 } from "@apollo/client";
 import { ApolloProvider } from "@apollo/client/react";
 import { useQuery, useMutation } from "@apollo/client/react";
+import AdminPanel from './components/AdminPanel';
+import Cart from './components/Cart';
+import ProductCard from './components/ProductCard';
+import ProductDetailModal from './components/ProductDetailModal';
+import Notification from './components/Notification';
 
 const httpLink = createHttpLink({
-  uri: "http://localhost:4000",
+  uri: "http://localhost:4001",
 });
 
 const client = new ApolloClient({
@@ -22,9 +27,49 @@ const GET_PRODUCTS = gql`
   query {
     products {
       id
+      doc_number
       title
+      short_title
+      series
+      part
+      revision
+      status
       description
+      publisher
+      publication_year
+      languages
+      access {
+        type
+        price_usd
+        sku
+      }
+      multi_user
+      categories
+      tags
+      url
+      created_at
+      updated_at
+      metadata {
+        document_type
+        format_support
+        is_replaced
+      }
       price
+    }
+  }
+`;
+
+const GET_CATEGORIES = gql`
+  query {
+    categories {
+      id
+      name
+      slug
+      description
+      parent_id
+      sort_order
+      created_at
+      updated_at
     }
   }
 `;
@@ -86,6 +131,10 @@ const CHECKOUT = gql`
       items {
         productId
         quantity
+        product {
+          title
+          price
+        }
       }
       total
       status
@@ -94,677 +143,94 @@ const CHECKOUT = gql`
   }
 `;
 
-const REMOVE_FROM_CART = gql`
-  mutation RemoveFromCart($cartId: ID!, $productId: ID!) {
-    removeFromCart(cartId: $cartId, productId: $productId) {
-      id
-      items {
-        productId
-        quantity
-        product {
-          id
-          title
-          price
-        }
-      }
-      total
-    }
-  }
-`;
-
-const UPDATE_CART_ITEM = gql`
-  mutation UpdateCartItem($cartId: ID!, $productId: ID!, $quantity: Int!) {
-    updateCartItem(cartId: $cartId, productId: $productId, quantity: $quantity) {
-      id
-      items {
-        productId
-        quantity
-        product {
-          id
-          title
-          price
-        }
-      }
-      total
-    }
-  }
-`;
-
-const CLEAR_CART = gql`
-  mutation ClearCart($cartId: ID!) {
-    clearCart(cartId: $cartId) {
-      id
-      items {
-        productId
-        quantity
-      }
-      total
-    }
-  }
-`;
-
-function Header() {
-  return (
-    <header style={{
-      backgroundColor: '#2E5BBA',
-      color: 'white',
-      padding: '0.75rem 0',
-      boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-    }}>
-      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 1rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center' }}>
-            <img 
-              src="/image.png" 
-              alt="NEMA Logo" 
-              style={{ 
-                height: '40px',
-                marginRight: '1rem'
-              }}
-            />
-            <div>
-              <div style={{ fontSize: '1rem', fontWeight: 'bold' }}>
-                The National Electrical Manufacturers Association
-              </div>
-              <div style={{ fontSize: '0.8rem', opacity: 0.9 }}>
-                Powered by Accuris
-              </div>
-            </div>
-          </div>
-          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', fontSize: '0.8rem' }}>
-            <span>Store Home</span>
-            <span>|</span>
-            <span>Help & Support</span>
-            <span>|</span>
-            <span>Sign In</span>
-          </div>
-        </div>
-        
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <div style={{ 
-              backgroundColor: 'rgba(255,255,255,0.1)', 
-              padding: '0.5rem 1rem', 
-              borderRadius: '4px',
-              fontSize: '0.9rem'
-            }}>
-              SHOP by Category ▼
-            </div>
-            
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <input 
-                type="text" 
-                placeholder="Search NEMA"
-                style={{
-                  padding: '0.5rem',
-                  border: 'none',
-                  borderRadius: '4px 0 0 4px',
-                  width: '300px',
-                  fontSize: '0.9rem'
-                }}
-              />
-              <select style={{
-                padding: '0.5rem',
-                border: 'none',
-                backgroundColor: 'white',
-                fontSize: '0.9rem'
-              }}>
-                <option>NEMA Catalog</option>
-              </select>
-              <button style={{
-                padding: '0.5rem 1rem',
-                backgroundColor: '#1a365d',
-                color: 'white',
-                border: 'none',
-                borderRadius: '0 4px 4px 0',
-                cursor: 'pointer'
-              }}>
-                🔍
-              </button>
-            </div>
-          </div>
-          
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <div style={{ fontSize: '0.9rem' }}>MY ACCOUNT ▼</div>
-            <div style={{ fontSize: '1.2rem' }}>🛒</div>
-          </div>
-        </div>
-      </div>
-    </header>
-  );
-}
-
-function ProductsList({ cartId, onAddToCart }) {
-  const { loading, error, data } = useQuery(GET_PRODUCTS);
-
-  if (loading) return <div style={{ textAlign: 'center', padding: '2rem' }}>Loading NEMA standards...</div>;
-  if (error) return <div style={{ textAlign: 'center', padding: '2rem', color: '#e53e3e' }}>Error: {error.message}</div>;
-
-  return (
-    <div style={{ backgroundColor: 'white', padding: '1rem 0' }}>
-      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 1rem' }}>
-        <div style={{ 
-          backgroundColor: '#2E5BBA', 
-          color: 'white', 
-          padding: '0.5rem 1rem', 
-          marginBottom: '1rem',
-          fontSize: '1.1rem',
-          fontWeight: 'bold'
-        }}>
-          PRODUCTS
-        </div>
-        
-        <div style={{ 
-          display: 'grid', 
-          gap: '1rem', 
-          gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-          padding: '1rem 0'
-        }}>
-          {data.products.map((product) => (
-            <div key={product.id} style={{ 
-              border: '1px solid #ddd', 
-              borderRadius: '4px',
-              backgroundColor: 'white',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-              overflow: 'hidden',
-              transition: 'transform 0.2s, box-shadow 0.2s'
-            }}>
-              <div style={{ 
-                backgroundColor: '#f8f9fa', 
-                height: '160px', 
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                border: '1px solid #e9ecef',
-                position: 'relative'
-              }}>
-                <div style={{
-                  width: '120px',
-                  height: '140px',
-                  backgroundColor: 'white',
-                  border: '1px solid #ddd',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '0.7rem',
-                  color: '#666',
-                  textAlign: 'center',
-                  padding: '0.5rem'
-                }}>
-                  <div style={{ 
-                    backgroundColor: '#2E5BBA', 
-                    color: 'white', 
-                    padding: '0.25rem', 
-                    marginBottom: '0.5rem',
-                    fontSize: '0.6rem',
-                    fontWeight: 'bold'
-                  }}>
-                    NEMA
-                  </div>
-                  <div style={{ fontSize: '0.6rem', lineHeight: '1.2' }}>
-                    {product.title.split(' ').slice(0, 3).join(' ')}
-                  </div>
-                  <div style={{ 
-                    position: 'absolute', 
-                    bottom: '0.5rem', 
-                    fontSize: '0.5rem',
-                    color: '#999'
-                  }}>
-                    Standard Document
-                  </div>
-                </div>
-              </div>
-              
-              <div style={{ padding: '1rem' }}>
-                <h3 style={{ 
-                  fontSize: '0.9rem', 
-                  fontWeight: '600', 
-                  color: '#2E5BBA', 
-                  marginBottom: '0.5rem',
-                  lineHeight: '1.3'
-                }}>
-                  {product.title}
-                </h3>
-                
-                <p style={{ 
-                  color: '#666', 
-                  fontSize: '0.8rem', 
-                  marginBottom: '1rem',
-                  lineHeight: '1.3',
-                  height: '2.6rem',
-                  overflow: 'hidden'
-                }}>
-                  {product.description}
-                </p>
-                
-                <div style={{ 
-                  display: 'flex', 
-                  justifyContent: 'space-between', 
-                  alignItems: 'center',
-                  borderTop: '1px solid #eee',
-                  paddingTop: '0.75rem'
-                }}>
-                  <div>
-                    <div style={{ fontSize: '0.7rem', color: '#666' }}>PRICED FROM</div>
-                    <span style={{ 
-                      fontSize: '1.1rem', 
-                      fontWeight: 'bold', 
-                      color: '#2E5BBA' 
-                    }}>
-                      ${product.price}
-                    </span>
-                  </div>
-                  
-                  <button 
-                    onClick={() => onAddToCart(product.id)}
-                    style={{
-                      backgroundColor: '#2E5BBA',
-                      color: 'white',
-                      padding: '0.5rem 1rem',
-                      border: 'none',
-                      borderRadius: '4px',
-                      cursor: 'pointer',
-                      fontSize: '0.8rem',
-                      fontWeight: '500',
-                      transition: 'background-color 0.2s'
-                    }}
-                    onMouseOver={(e) => e.target.style.backgroundColor = '#1e3a8a'}
-                    onMouseOut={(e) => e.target.style.backgroundColor = '#2E5BBA'}
-                  >
-                    Add to Cart
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function Cart({ cartId, onCheckout, onRemoveItem, onUpdateQuantity, onClearCart }) {
-  const { loading, error, data } = useQuery(GET_CART, {
-    variables: { id: cartId },
-    skip: !cartId
-  });
-
-  if (!cartId) {
-    return (
-      <div style={{ 
-        backgroundColor: 'white', 
-        border: '1px solid #ddd', 
-        borderRadius: '4px', 
-        boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-        maxWidth: '500px',
-        margin: '1rem auto'
-      }}>
-        <div style={{ 
-          backgroundColor: '#2E5BBA', 
-          color: 'white', 
-          padding: '0.5rem 1rem', 
-          fontSize: '1rem',
-          fontWeight: 'bold'
-        }}>
-          SHOPPING CART
-        </div>
-        <div style={{ padding: '1rem', textAlign: 'center', color: '#666' }}>
-          <p>Your cart is empty. Add some NEMA standards to get started!</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (loading) return <div style={{ textAlign: 'center', padding: '2rem' }}>Loading cart...</div>;
-  if (error) return <div style={{ textAlign: 'center', padding: '2rem', color: '#e53e3e' }}>Error: {error.message}</div>;
-
-  const cart = data.cart;
-  
-  return (
-    <div style={{ 
-      backgroundColor: 'white', 
-      border: '1px solid #ddd', 
-      borderRadius: '4px', 
-      boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-      maxWidth: '500px',
-      margin: '1rem auto'
-    }}>
-      <div style={{ 
-        backgroundColor: '#2E5BBA', 
-        color: 'white', 
-        padding: '0.5rem 1rem', 
-        fontSize: '1rem',
-        fontWeight: 'bold',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center'
-      }}>
-        <span>SHOPPING CART ({cart.items.length} items)</span>
-        {cart.items.length > 0 && (
-          <button 
-            onClick={() => onClearCart(cartId)}
-            style={{
-              backgroundColor: 'transparent',
-              color: 'white',
-              border: '1px solid white',
-              borderRadius: '3px',
-              padding: '0.25rem 0.5rem',
-              fontSize: '0.7rem',
-              cursor: 'pointer'
-            }}
-            title="Clear all items"
-          >
-            Clear All
-          </button>
-        )}
-      </div>
-      
-      <div style={{ padding: '1rem' }}>
-        {cart.items.length === 0 ? (
-          <p style={{ color: '#666', textAlign: 'center', margin: 0 }}>
-            Your cart is empty
-          </p>
-        ) : (
-          <>
-            <div style={{ marginBottom: '1rem' }}>
-              {cart.items.map((item) => (
-                <div key={item.product.id} style={{ 
-                  display: 'flex', 
-                  justifyContent: 'space-between', 
-                  alignItems: 'flex-start',
-                  padding: '0.75rem 0',
-                  borderBottom: '1px solid #eee'
-                }}>
-                  <div style={{ flex: 1, marginRight: '1rem' }}>
-                    <div style={{ 
-                      fontWeight: '600', 
-                      color: '#2E5BBA', 
-                      fontSize: '0.8rem',
-                      lineHeight: '1.3',
-                      marginBottom: '0.25rem'
-                    }}>
-                      {item.product.title}
-                    </div>
-                    <div style={{ fontSize: '0.7rem', color: '#666', marginBottom: '0.5rem' }}>
-                      ${item.product.price} each
-                    </div>
-                    
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <button 
-                        onClick={() => onUpdateQuantity(cartId, item.product.id, item.quantity - 1)}
-                        style={{
-                          backgroundColor: '#f8f9fa',
-                          border: '1px solid #ddd',
-                          borderRadius: '3px',
-                          width: '24px',
-                          height: '24px',
-                          cursor: 'pointer',
-                          fontSize: '0.8rem'
-                        }}
-                        disabled={item.quantity <= 1}
-                      >
-                        -
-                      </button>
-                      
-                      <input 
-                        type="number" 
-                        value={item.quantity}
-                        onChange={(e) => {
-                          const newQty = parseInt(e.target.value) || 1;
-                          onUpdateQuantity(cartId, item.product.id, newQty);
-                        }}
-                        style={{
-                          width: '50px',
-                          padding: '0.25rem',
-                          border: '1px solid #ddd',
-                          borderRadius: '3px',
-                          textAlign: 'center',
-                          fontSize: '0.8rem'
-                        }}
-                        min="1"
-                      />
-                      
-                      <button 
-                        onClick={() => onUpdateQuantity(cartId, item.product.id, item.quantity + 1)}
-                        style={{
-                          backgroundColor: '#f8f9fa',
-                          border: '1px solid #ddd',
-                          borderRadius: '3px',
-                          width: '24px',
-                          height: '24px',
-                          cursor: 'pointer',
-                          fontSize: '0.8rem'
-                        }}
-                      >
-                        +
-                      </button>
-                      
-                      <button 
-                        onClick={() => onRemoveItem(cartId, item.product.id)}
-                        style={{
-                          backgroundColor: '#dc3545',
-                          color: 'white',
-                          border: 'none',
-                          borderRadius: '3px',
-                          padding: '0.25rem 0.5rem',
-                          fontSize: '0.7rem',
-                          cursor: 'pointer',
-                          marginLeft: '0.5rem'
-                        }}
-                        title="Remove item"
-                      >
-                        Remove
-                      </button>
-                    </div>
-                  </div>
-                  
-                  <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: '0.9rem', color: '#2E5BBA', fontWeight: '600' }}>
-                      ${(item.product.price * item.quantity).toFixed(2)}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-            
-            <div style={{ 
-              borderTop: '2px solid #2E5BBA', 
-              paddingTop: '1rem',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center'
-            }}>
-              <div style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#2E5BBA' }}>
-                Total: ${cart.total.toFixed(2)}
-              </div>
-              <button 
-                onClick={() => onCheckout(cartId)}
-                style={{
-                  backgroundColor: '#2E5BBA',
-                  color: 'white',
-                  padding: '0.5rem 1rem',
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  fontSize: '0.9rem',
-                  fontWeight: '500',
-                  transition: 'background-color 0.2s'
-                }}
-                onMouseOver={(e) => e.target.style.backgroundColor = '#1e3a8a'}
-                onMouseOut={(e) => e.target.style.backgroundColor = '#2E5BBA'}
-              >
-                Checkout
-              </button>
-            </div>
-          </>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function OrderConfirmation({ order, onContinueShopping }) {
-  return (
-    <div style={{ 
-      backgroundColor: 'white', 
-      border: '1px solid #ddd', 
-      borderRadius: '4px', 
-      boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-      maxWidth: '500px',
-      margin: '2rem auto',
-      textAlign: 'center'
-    }}>
-      <div style={{ 
-        backgroundColor: '#28a745', 
-        color: 'white', 
-        padding: '1rem', 
-        fontSize: '1.2rem',
-        fontWeight: 'bold'
-      }}>
-        ✅ ORDER CONFIRMED
-      </div>
-      
-      <div style={{ padding: '2rem' }}>
-        <div style={{ marginBottom: '1.5rem' }}>
-          <h3 style={{ color: '#2E5BBA', marginBottom: '0.5rem' }}>
-            Thank you for your order!
-          </h3>
-          <p style={{ color: '#666', fontSize: '0.9rem' }}>
-            Your NEMA standards have been processed successfully.
-          </p>
-        </div>
-        
-        <div style={{ 
-          backgroundColor: '#f8f9fa', 
-          padding: '1rem', 
-          borderRadius: '4px',
-          marginBottom: '1.5rem',
-          textAlign: 'left'
-        }}>
-          <div style={{ marginBottom: '0.5rem' }}>
-            <strong>Order ID:</strong> {order.id}
-          </div>
-          <div style={{ marginBottom: '0.5rem' }}>
-            <strong>Total:</strong> ${order.total.toFixed(2)}
-          </div>
-          <div style={{ marginBottom: '0.5rem' }}>
-            <strong>Status:</strong> {order.status}
-          </div>
-          <div>
-            <strong>Date:</strong> {new Date(order.createdAt).toLocaleDateString()}
-          </div>
-        </div>
-        
-        <button 
-          onClick={onContinueShopping}
-          style={{
-            backgroundColor: '#2E5BBA',
-            color: 'white',
-            padding: '0.75rem 1.5rem',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: 'pointer',
-            fontSize: '1rem',
-            fontWeight: '500'
-          }}
-        >
-          Continue Shopping
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function StoreApp() {
-  const [cartId, setCartId] = useState(null);
-  const [order, setOrder] = useState(null);
-  const [createCart] = useMutation(CREATE_CART);
+const MainApp = () => {
+  const { data, loading, error } = useQuery(GET_PRODUCTS);
+  const { data: categoriesData } = useQuery(GET_CATEGORIES);
   const [addToCart] = useMutation(ADD_TO_CART);
-  const [removeFromCart] = useMutation(REMOVE_FROM_CART);
-  const [updateCartItem] = useMutation(UPDATE_CART_ITEM);
-  const [clearCart] = useMutation(CLEAR_CART);
+  const [createCart] = useMutation(CREATE_CART);
   const [checkout] = useMutation(CHECKOUT);
+  
+  const [cartId, setCartId] = useState(null);
+  const [showCart, setShowCart] = useState(false);
+  const [showAdmin, setShowAdmin] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [showProductDetail, setShowProductDetail] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState('');
+  const [notification, setNotification] = useState(null);
+  const [order, setOrder] = useState(null);
 
-  // Create cart on component mount
+  // Create a cart when the component mounts
   useEffect(() => {
-    if (!createCart) return;
-    
     const initCart = async () => {
       try {
         const result = await createCart();
         setCartId(result.data.createCart.id);
       } catch (error) {
-        console.error('Error creating cart:', error);
+        console.error("Error creating cart:", error);
       }
     };
     initCart();
   }, [createCart]);
 
+  const handleProductClick = (product) => {
+    console.log('handleProductClick called with:', product);
+    setSelectedProduct(product);
+    setShowProductDetail(true);
+    console.log('Modal state set to true');
+  };
+
+  const handleCloseProductDetail = () => {
+    setShowProductDetail(false);
+    setSelectedProduct(null);
+  };
+
+  const handleCategoryChange = (categoryId) => {
+    setSelectedCategory(categoryId);
+  };
+
+  // Filter products by selected category
+  const filteredProducts = selectedCategory 
+    ? data?.products?.filter(product => 
+        product.categories && product.categories.includes(parseInt(selectedCategory))
+      ) || []
+    : data?.products || [];
+
+  console.log('Filtered products:', filteredProducts, 'selectedCategory:', selectedCategory);
+  console.log('All products with categories:', data?.products?.map(p => ({id: p.id, title: p.title, categories: p.categories})));
+  console.log('Categories data:', categoriesData?.categories?.map(c => ({id: c.id, name: c.name})));
+
   const handleAddToCart = async (productId) => {
-    if (!cartId || !addToCart) return;
+    if (!cartId) {
+      console.log('No cart ID available');
+      return;
+    }
     
     try {
-      await addToCart({
+      const result = await addToCart({
         variables: {
-          cartId,
-          productId,
+          cartId: cartId,
+          productId: productId,
           quantity: 1
-        },
-        refetchQueries: [{ query: GET_CART, variables: { id: cartId } }]
+        }
+      });
+      
+      console.log('Add to cart result:', result);
+      
+      setNotification({
+        message: 'Product added to cart!',
+        type: 'success'
       });
     } catch (error) {
-      console.error('Error adding to cart:', error);
-      alert('Failed to add item to cart');
-    }
-  };
-
-  const handleRemoveItem = async (cartId, productId) => {
-    if (!removeFromCart) return;
-    
-    try {
-      await removeFromCart({
-        variables: { cartId, productId },
-        refetchQueries: [{ query: GET_CART, variables: { id: cartId } }]
+      console.error("Error adding to cart:", error);
+      setNotification({
+        message: 'Error adding item to cart: ' + error.message,
+        type: 'error'
       });
-    } catch (error) {
-      console.error('Error removing item:', error);
-      alert('Failed to remove item from cart');
     }
   };
 
-  const handleUpdateQuantity = async (cartId, productId, quantity) => {
-    if (!updateCartItem) return;
-    
-    try {
-      await updateCartItem({
-        variables: { cartId, productId, quantity },
-        refetchQueries: [{ query: GET_CART, variables: { id: cartId } }]
-      });
-    } catch (error) {
-      console.error('Error updating quantity:', error);
-      alert('Failed to update item quantity');
-    }
-  };
-
-  const handleClearCart = async (cartId) => {
-    if (!clearCart) return;
-    
-    if (window.confirm('Are you sure you want to clear all items from your cart?')) {
-      try {
-        await clearCart({
-          variables: { cartId },
-          refetchQueries: [{ query: GET_CART, variables: { id: cartId } }]
-        });
-      } catch (error) {
-        console.error('Error clearing cart:', error);
-        alert('Failed to clear cart');
-      }
-    }
-  };
-
-  const handleCheckout = async (cartId) => {
-    if (!checkout) return;
+  const handleCheckout = async () => {
+    if (!cartId) return;
     
     try {
       const result = await checkout({
@@ -775,37 +241,382 @@ function StoreApp() {
       // Create a new cart for future shopping
       const newCartResult = await createCart();
       setCartId(newCartResult.data.createCart.id);
+      setShowCart(false);
     } catch (error) {
       console.error('Error during checkout:', error);
-      alert('Checkout failed: ' + error.message);
+      setNotification({
+        message: 'Checkout failed: ' + error.message,
+        type: 'error'
+      });
     }
   };
 
-  const handleContinueShopping = () => {
-    setOrder(null);
-  };
+  console.log('MainApp render - loading:', loading, 'error:', error, 'data:', data, 'categoriesData:', categoriesData);
+  
+  if (loading) return <div style={{ textAlign: 'center', padding: '2rem' }}>Loading...</div>;
+  if (error) return <div style={{ textAlign: 'center', padding: '2rem', color: 'red' }}>Error: {error.message}</div>;
+
+  if (showAdmin) {
+    return (
+      <div>
+        <div style={{ 
+          background: '#2E5BBA', 
+          color: 'white', 
+          padding: '1rem',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
+        }}>
+          <h1 style={{ margin: 0 }}>NEMA Admin Panel</h1>
+          <button
+            onClick={() => setShowAdmin(false)}
+            style={{
+              background: 'rgba(255,255,255,0.2)',
+              color: 'white',
+              border: '1px solid rgba(255,255,255,0.3)',
+              padding: '0.5rem 1rem',
+              borderRadius: '4px',
+              cursor: 'pointer'
+            }}
+          >
+            Back to Store
+          </button>
+        </div>
+        <AdminPanel />
+      </div>
+    );
+  }
 
   if (order) {
     return (
       <div style={{ backgroundColor: '#f7fafc', minHeight: '100vh' }}>
-        <Header />
-        <OrderConfirmation order={order} onContinueShopping={handleContinueShopping} />
+        <Header onShowAdmin={() => setShowAdmin(true)} />
+        <div style={{ 
+          backgroundColor: 'white', 
+          border: '1px solid #ddd', 
+          borderRadius: '4px', 
+          boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+          maxWidth: '500px',
+          margin: '2rem auto',
+          textAlign: 'center'
+        }}>
+          <div style={{ 
+            backgroundColor: '#28a745', 
+            color: 'white', 
+            padding: '1rem', 
+            fontSize: '1.2rem',
+            fontWeight: 'bold'
+          }}>
+            ORDER CONFIRMED
+          </div>
+          
+          <div style={{ padding: '2rem' }}>
+            <div style={{ marginBottom: '1.5rem' }}>
+              <h3 style={{ color: '#2E5BBA', marginBottom: '0.5rem' }}>
+                Thank you for your order!
+              </h3>
+              <p style={{ color: '#666', fontSize: '0.9rem' }}>
+                Your NEMA standards have been processed successfully.
+              </p>
+            </div>
+            
+            <div style={{ 
+              backgroundColor: '#f8f9fa', 
+              padding: '1rem', 
+              borderRadius: '4px',
+              marginBottom: '1.5rem',
+              textAlign: 'left'
+            }}>
+              <div style={{ marginBottom: '0.5rem' }}>
+                <strong>Order ID:</strong> {order.id}
+              </div>
+              <div style={{ marginBottom: '0.5rem' }}>
+                <strong>Total:</strong> ${order.total.toFixed(2)}
+              </div>
+              <div style={{ marginBottom: '0.5rem' }}>
+                <strong>Status:</strong> {order.status}
+              </div>
+              <div>
+                <strong>Date:</strong> {new Date(order.createdAt).toLocaleDateString()}
+              </div>
+            </div>
+            
+            <button 
+              onClick={() => setOrder(null)}
+              style={{
+                backgroundColor: '#2E5BBA',
+                color: 'white',
+                padding: '0.75rem 1.5rem',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '1rem',
+                fontWeight: '500'
+              }}
+            >
+              Continue Shopping
+            </button>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
     <div style={{ backgroundColor: '#f7fafc', minHeight: '100vh' }}>
-      <Header />
+      <Header 
+        onShowAdmin={() => setShowAdmin(true)} 
+        onShowCart={() => setShowCart(true)}
+        categories={categoriesData?.categories || []}
+        selectedCategory={selectedCategory}
+        onCategoryChange={handleCategoryChange}
+      />
+      
       <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 1rem' }}>
-        <ProductsList cartId={cartId} onAddToCart={handleAddToCart} />
-        <Cart 
-          cartId={cartId} 
-          onCheckout={handleCheckout}
-          onRemoveItem={handleRemoveItem}
-          onUpdateQuantity={handleUpdateQuantity}
-          onClearCart={handleClearCart}
+        <ProductsList 
+          products={filteredProducts} 
+          onAddToCart={handleAddToCart} 
+          onProductClick={handleProductClick}
         />
+      </div>
+
+      {/* Notification */}
+      {notification && (
+        <Notification
+          message={notification.message}
+          type={notification.type}
+          onClose={() => setNotification(null)}
+        />
+      )}
+
+      {/* Cart Sidebar */}
+      {showCart && (
+        <Cart
+          cartId={cartId}
+          onClose={() => setShowCart(false)}
+          onCheckout={handleCheckout}
+        />
+      )}
+
+      {/* Product Detail Modal */}
+      {showProductDetail && selectedProduct && (
+        <ProductDetailModal
+          product={selectedProduct}
+          isOpen={showProductDetail}
+          onClose={handleCloseProductDetail}
+        />
+      )}
+    </div>
+  );
+};
+
+// Header Component
+function Header({ onShowAdmin, onShowCart, categories, selectedCategory, onCategoryChange }) {
+  return (
+    <header>
+      {/* Top Blue Section */}
+      <div style={{
+        backgroundColor: '#2E5BBA',
+        color: 'white',
+        padding: '1rem 0'
+      }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 1rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            {/* Left side - NEMA Logo and Text */}
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+              <img 
+                src="/image.png" 
+                alt="NEMA Logo" 
+                style={{ 
+                  height: '50px',
+                  width: 'auto',
+                  marginRight: '1rem'
+                }}
+              />
+              <div>
+                <div style={{ 
+                  fontSize: '1.3rem', 
+                  fontWeight: 'bold',
+                  fontStyle: 'italic',
+                  lineHeight: '1.1'
+                }}>
+                  The National Electrical Manufacturers
+                </div>
+                <div style={{ 
+                  fontSize: '1.3rem', 
+                  fontWeight: 'bold',
+                  fontStyle: 'italic',
+                  lineHeight: '1.1'
+                }}>
+                  Association
+                </div>
+                
+              </div>
+            </div>
+            
+            {/* Right side - Navigation */}
+            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', fontSize: '0.8rem' }}>
+              <button
+                onClick={onShowAdmin}
+                style={{
+                  background: 'rgba(255,255,255,0.2)',
+                  color: 'white',
+                  border: '1px solid rgba(255,255,255,0.3)',
+                  padding: '0.4rem 0.8rem',
+                  borderRadius: '3px',
+                  cursor: 'pointer',
+                  fontSize: '0.75rem'
+                }}
+              >
+                Admin Panel
+              </button>
+              <span>Store Home</span>
+              <span style={{ opacity: 0.7 }}>|</span>
+              <span>Help & Support</span>
+              <span style={{ opacity: 0.7 }}>|</span>
+              <span>Sign In</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      {/* Bottom Gray Section */}
+      <div style={{
+        backgroundColor: '#e5e7eb',
+        padding: '0.75rem 0',
+        borderBottom: '1px solid #d1d5db'
+      }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 1rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            {/* Left side - Shop and Search */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              <select 
+                value={selectedCategory}
+                onChange={(e) => onCategoryChange(e.target.value)}
+                style={{ 
+                  backgroundColor: 'white', 
+                  padding: '0.5rem 1rem', 
+                  borderRadius: '4px',
+                  fontSize: '0.9rem',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  border: '1px solid #d1d5db',
+                  color: '#374151',
+                  outline: 'none',
+                  minWidth: '160px'
+                }}>
+                <option value="">SHOP by Category</option>
+                {categories.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
+              
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                background: 'white',
+                borderRadius: '4px',
+                border: '1px solid #d1d5db',
+                overflow: 'hidden',
+                minWidth: '400px'
+              }}>
+                <input 
+                  type="text" 
+                  placeholder="Search NEMA"
+                  style={{
+                    flex: 1,
+                    border: 'none',
+                    padding: '0.6rem 1rem',
+                    fontSize: '0.9rem',
+                    outline: 'none',
+                    color: '#374151'
+                  }}
+                />
+                <button style={{
+                  background: '#2E5BBA',
+                  color: 'white',
+                  border: 'none',
+                  padding: '0.6rem 1rem',
+                  cursor: 'pointer',
+                  fontSize: '0.9rem'
+                }}>
+                  🔍
+                </button>
+              </div>
+            </div>
+            
+            {/* Right side - Account and Cart */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              <div style={{ 
+                background: 'white', 
+                padding: '0.5rem 1rem', 
+                borderRadius: '4px',
+                fontSize: '0.9rem',
+                cursor: 'pointer',
+                border: '1px solid #d1d5db',
+                fontWeight: '600',
+                color: '#374151'
+              }}>
+                MY ACCOUNT ▼
+              </div>
+              <button
+                onClick={onShowCart}
+                style={{
+                  background: 'white',
+                  border: '1px solid #d1d5db',
+                  color: '#374151',
+                  cursor: 'pointer',
+                  fontSize: '1.2rem',
+                  padding: '0.5rem 1rem',
+                  borderRadius: '4px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.25rem'
+                }}
+              >
+                🛒 -
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+  );
+}
+
+// Products List Component
+function ProductsList({ products, onAddToCart, onProductClick }) {
+  return (
+    <div style={{ backgroundColor: 'white', padding: '1rem 0' }}>
+      <div style={{ 
+        background: '#2E5BBA', 
+        color: 'white', 
+        padding: '0.75rem 1.5rem', 
+        marginBottom: '2rem',
+        fontSize: '1.2rem',
+        fontWeight: 'bold',
+        letterSpacing: '0.5px'
+      }}>
+        MOST POPULAR PRODUCTS
+      </div>
+      
+      <div style={{ 
+        display: 'grid', 
+        gap: '1.5rem', 
+        gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+        padding: '2rem 0',
+        justifyItems: 'center'
+      }}>
+        {products.map((product) => (
+          <ProductCard 
+            key={product.id} 
+            product={product} 
+            onAddToCart={() => onAddToCart(product.id)} 
+            onProductClick={onProductClick}
+          />
+        ))}
       </div>
     </div>
   );
@@ -814,7 +625,7 @@ function StoreApp() {
 export default function App() {
   return (
     <ApolloProvider client={client}>
-      <StoreApp />
+      <MainApp />
     </ApolloProvider>
   );
 }

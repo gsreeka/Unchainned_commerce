@@ -12,7 +12,8 @@ const config = {
   containerId: {
     products: "Products",
     carts: "Carts", 
-    orders: "Orders"
+    orders: "Orders",
+    categories: "Categories"
   }
 };
 
@@ -26,7 +27,11 @@ class CosmosDBService {
       }
     });
     this.database = null;
-    this.containers = {};
+    this.containers = {
+      products: null,
+      orders: null,
+      categories: null
+    };
   }
 
   async initialize() {
@@ -51,7 +56,7 @@ class CosmosDBService {
       }
 
       // Seed initial data if products container is empty
-      await this.seedInitialData();
+      // await this.seedInitialData(); // Disabled - products already exist in database
       
       console.log("✅ Cosmos DB initialized successfully");
     } catch (error) {
@@ -62,96 +67,68 @@ class CosmosDBService {
 
   async seedInitialData() {
     try {
-      // Check if products already exist
-      const { resources: existingProducts } = await this.containers.products.items.readAll().fetchAll();
+      // Check if categories already exist
+      const { resources: existingCategories } = await this.containers.categories.items.readAll().fetchAll();
       
-      if (existingProducts.length === 0) {
-        console.log("Seeding initial NEMA products...");
+      if (existingCategories.length === 0) {
+        console.log("Seeding initial NEMA categories...");
         
-        const sampleProducts = [
+        // Seed basic categories only
+        const categories = [
           {
             id: "1",
-            title: "ANSI/NEMA MG 1-2016",
-            description: "Motors and Generators - Comprehensive standard covering AC and DC motors, generators, and motor-generator sets including performance, efficiency, and testing requirements.",
-            price: 425.00
-          },
-          {
-            id: "2", 
-            title: "ANSI/NEMA ICS 1-2000 (R2020)",
-            description: "Industrial Control and Systems: General Requirements - Fundamental standard for industrial control equipment including contactors, motor starters, and control circuits.",
-            price: 285.00
-          },
-          {
-            id: "3",
-            title: "ANSI/NEMA WC 70-2018", 
-            description: "Power Cables Rated 2000 Volts or Less for the Distribution of Electrical Energy - Specifications for insulated power cables used in electrical distribution systems.",
-            price: 310.00
-          },
-          {
-            id: "4",
-            title: "ANSI/NEMA TS 10-2020",
-            description: "Traffic Controller Assemblies with NTCIP Requirements - Standard for traffic signal controllers including NTCIP protocol compliance and interoperability.",
-            price: 195.00
-          },
-          {
-            id: "5",
-            title: "ANSI/NEMA 250-2020",
-            description: "Enclosures for Electrical Equipment (1000 Volts Maximum) - Classification and testing of electrical enclosures for indoor and outdoor applications.",
-            price: 275.00
-          },
-          {
-            id: "6",
-            title: "ANSI/NEMA ICS 2-2020",
-            description: "Industrial Control and Systems: Controllers, Contactors, and Overload Relays Rated 600 V - Requirements for low-voltage industrial control devices.",
-            price: 235.00
-          },
-          {
-            id: "7",
-            title: "ANSI/NEMA FB 1-2016",
-            description: "Fittings, Cast Metal Boxes, and Conduit Bodies for Use with Rigid Metal Conduit and Intermediate Metal Conduit - Specifications for electrical fittings.",
-            price: 165.00
-          },
-          {
-            id: "8",
-            title: "ANSI/NEMA TC 2-2003 (R2018)",
-            description: "Electrical Plastic Tubing (EPT) and Conduit (EPC-40 and EPC-80) - Standards for non-metallic electrical conduit systems.",
-            price: 145.00
-          },
-          {
-            id: "9",
-            title: "ANSI/NEMA ICS 6-2016",
-            description: "Industrial Control and Systems: Enclosures - Requirements for industrial control equipment enclosures including NEMA ratings and environmental protection.",
-            price: 205.00
-          },
-          {
-            id: "10",
-            title: "ANSI/NEMA WC 74-2020",
-            description: "Flexible Cord and Fixture Wire - Specifications for portable cord sets, extension cords, and fixture wiring used in electrical applications.",
-            price: 185.00
-          },
-          {
-            id: "11",
-            title: "ANSI/NEMA SS 1-2020",
-            description: "Surge Suppressors (Low Voltage) - Performance requirements and test methods for surge protective devices used in low-voltage electrical systems.",
-            price: 225.00
-          },
-          {
-            id: "12",
-            title: "ANSI/NEMA ICS 4-2005 (R2020)",
-            description: "Industrial Control and Systems: Terminal Blocks - Requirements for terminal blocks used in industrial control panels and electrical equipment.",
-            price: 155.00
+            name: "General Standards",
+            slug: "general-standards",
+            description: "General NEMA standards and specifications",
+            parent_id: null,
+            sort_order: 1,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
           }
         ];
 
-        for (const product of sampleProducts) {
-          await this.containers.products.items.create(product);
+        for (const category of categories) {
+          await this.containers.categories.items.create(category);
         }
         
-        console.log(`✅ Seeded ${sampleProducts.length} NEMA products`);
+        console.log(`✅ Seeded ${categories.length} basic categories`);
       }
+
+      console.log("✅ Database ready - no sample products seeded");
     } catch (error) {
       console.error("Error seeding initial data:", error);
     }
+  }
+
+  // Category operations
+  async getAllCategories() {
+    const { resources } = await this.containers.categories.items.readAll().fetchAll();
+    return resources;
+  }
+
+  async getCategoryById(id) {
+    try {
+      const { resource } = await this.containers.categories.item(id, id).read();
+      return resource;
+    } catch (error) {
+      if (error.code === 404) return null;
+      throw error;
+    }
+  }
+
+  async createCategory(categoryData) {
+    const { resource } = await this.containers.categories.items.create(categoryData);
+    return resource;
+  }
+
+  async updateCategory(id, categoryData) {
+    const { resource } = await this.containers.categories.item(id, id).replace(categoryData);
+    return resource;
+  }
+
+  async deleteCategory(id) {
+    await this.containers.categories.item(id, id).delete();
+    return true;
   }
 
   // Product operations

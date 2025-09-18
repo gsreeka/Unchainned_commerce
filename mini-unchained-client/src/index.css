@@ -11,3 +11,60 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+.nema-search-container {
+  display: flex;
+  align-items: center;
+  background: #f8f9fa;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 8px;
+  max-width: 600px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.nema-search-field {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid #ccc;
+  border-radius: 4px 0 0 4px;
+  font-size: 14px;
+  outline: none;
+  background: white;
+  color: #333;
+  min-width: 200px;
+}
+
+.nema-search-field::placeholder {
+  color: #888;
+  font-size: 14px;
+}
+
+.nema-catalog-dropdown {
+  padding: 8px 12px;
+  border: 1px solid #ccc;
+  border-left: none;
+  background: white;
+  font-size: 14px;
+  outline: none;
+  color: #333;
+  min-width: 140px;
+}
+
+.nema-search-btn {
+  background: #2E5BBA;
+  color: white;
+  border: 1px solid #2E5BBA;
+  border-radius: 0 4px 4px 0;
+  padding: 8px 16px;
+  cursor: pointer;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s;
+}
+
+.nema-search-btn:hover {
+  background: #1e3f7a;
+}
