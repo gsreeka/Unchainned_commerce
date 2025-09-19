@@ -8,7 +8,7 @@
 - **Admin Panel**: Manage products and orders (Categories tab removed for security)
 - **Order Management**: Complete checkout process with order confirmation
 
-## 🏗️ Architecture
+##  Architecture
 
 ### Frontend (React)
 - **React 18** with functional components and hooks
@@ -21,7 +21,7 @@
 - **In-memory database** for development
 - **Real-time data** with GraphQL queries and mutations
 
-## 🛠️ Installation & Setup
+##  Installation & Setup
 
 ### Prerequisites
 - Node.js >= 16.0.0
@@ -54,7 +54,7 @@ The React app will start on `http://localhost:3000`
 ### GraphQL Endpoint
 The frontend connects to the GraphQL server at `http://localhost:4001`
 
-## 📊 Available Scripts
+##  Available Scripts
 
 ### Backend
 ```bash
@@ -67,7 +67,7 @@ npm run dev        # Start with nodemon (if configured)
 npm start          # Start development server
 ```
 
-## 🔄 GraphQL Schema
+##  GraphQL Schema
 
 ### Key Queries
 ```graphql
