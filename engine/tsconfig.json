@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "resolveJsonModule": true,
+    "rewriteRelativeImportExtensions": true,
+    "erasableSyntaxOnly": true,
+    "verbatimModuleSyntax": true,
+    "allowImportingTsExtensions": true,
+    "lib": ["esnext"],
+    "module": "nodenext",
+    "outDir": "lib",
+    "skipLibCheck": true,
+    "sourceMap": true,
+    "target": "esnext",
+    "types": ["node"],
+    "baseUrl": "." // This must be specified if "paths" is.
+  },
+  "include": ["./**/*.ts"],
+  "exclude": ["node_modules", "lib"]
+}

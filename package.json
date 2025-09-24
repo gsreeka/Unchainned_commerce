@@ -1,0 +1,21 @@
+{
+  "name": "my-shop",
+  "description": "Full stack unchained e-commerce boilerplate",
+  "version": "0.0.1",
+  "license": "EUPL-1.2",
+  "private": false,
+  "scripts": {
+    "install": "run-p --print-label install:*",
+    "install:storefront": "cd storefront && npm install",
+    "install:engine": "cd engine && npm install",
+    "dev": "run-p --print-label dev:*",
+    "dev:engine": "cd engine && npm run dev",
+    "dev:storefront": "cd storefront && npm run dev",
+    "lint": "run-p --print-label lint:*",
+    "lint:engine": "cd engine && npm run lint",
+    "lint:storefront": "cd storefront && npm run lint"
+  },
+  "devDependencies": {
+    "npm-run-all": "^4.1.5"
+  }
+}
