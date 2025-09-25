@@ -1,0 +1,85 @@
+# Dependency directories
+
+node_modules/
+
+.next/
+
+.cache/
+
+# Build outputs
+
+build/
+
+dist/
+
+# Environment files
+
+.env*
+
+!.env.example
+
+# Logs
+
+logs
+
+*.log
+
+# Editor directories and files
+
+.idea/
+
+.vscode/
+
+*.suo
+
+*.ntvs*
+
+*.njsproj
+
+*.sln
+
+*.sw?
+
+# OS generated files
+
+.DS_Store
+
+.DS_Store?
+
+._*
+
+.Spotlight-V100
+
+.Trashes
+
+ehthumbs.db
+
+Thumbs.db
+
+# Test files
+
+coverage/
+
+*.test.js
+
+*.spec.js
+
+# Docker files
+
+Dockerfile
+
+.dockerignore
+
+# Git
+
+.git/
+
+.gitignore
+
+# Local development
+
+.turbo
+
+.vercel
+
+.env.local

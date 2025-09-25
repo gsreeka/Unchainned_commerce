@@ -1,0 +1,93 @@
+services:
+  mongo:
+    image: mongo:6.0
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: unchained
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - app-network
+
+  engine:
+    build:
+      context: ./engine
+      dockerfile: Dockerfile
+      target: dev  # Use development target for better error messages
+    environment:
+      - NODE_ENV=development
+      - PORT=3001
+      - ROOT_URL=http://localhost:3001
+      - MONGODB_URL=mongodb://mongo:27017/unchained_core
+      - MONGO_URL=mongodb://mongo:27017/unchained_core
+      - UNCHAINED_COOKIE_DOMAIN=localhost
+      - EMAIL_WEBSITE_NAME=Unchained
+      - EMAIL_FROM=noreply@unchained.local
+      - EMAIL_WEBSITE_URL=http://localhost:3001
+      - UNCHAINED_SECRET=secret
+      - UNCHAINED_TOKEN_SECRET=random-token-that-is-not-secret-at-all
+      - UNCHAINED_COOKIE_SAMESITE=none
+      - UNCHAINED_GRAPHQL_ENDPOINT=/graphql
+      - UNCHAINED_GRAPHQL_PLAYGROUND_ENABLED=true
+      - UNCHAINED_GRAPHQL_INTROSPECTION=true
+      - DEBUG=unchained:*
+      - NODE_OPTIONS=--max_old_space_size=4096
+    depends_on:
+      mongo:
+        condition: service_healthy
+    ports:
+      - "3001:3001"  # Map host port 3001 to container port 3001
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3001/graphql"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+      start_period: 30s
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  storefront:
+    build:
+      context: ./storefront
+      dockerfile: Dockerfile
+      args:
+        UNCHAINED_ENDPOINT: http://engine:3000/graphql
+    environment:
+      - NODE_ENV=development
+      - UNCHAINED_ENDPOINT=http://engine:3000/graphql
+      - GRAPHQL_ENDPOINT=http://localhost:3001/graphql
+      - NEXT_PUBLIC_UNCHAINED_ENDPOINT=http://localhost:3001/graphql
+      - CHOKIDAR_USEPOLLING=true
+    ports:
+      - "3000:3000"
+    working_dir: /usr/src/app
+    stdin_open: true
+    tty: true
+    depends_on:
+      engine:
+        condition: service_healthy
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+ 
+networks:
+  app-network:
+    driver: bridge
+ 
+volumes:
+  mongodb_data:
+ 
