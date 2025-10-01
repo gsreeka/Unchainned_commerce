@@ -1,0 +1,93 @@
+services:
+  # MongoDB is running on the host machine at localhost:27017 
+  engine:
+    build:
+      context: ./engine
+      dockerfile: Dockerfile
+      target: dev
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=development
+      - PORT=3001
+      - ROOT_URL=http://localhost:3001
+      - MONGODB_URL=mongodb://host.docker.internal:27017/unchained_core
+      - MONGO_URL=mongodb://host.docker.internal:27017/unchained_core
+      - UNCHAINED_ENDPOINT=http://localhost:3001/graphql
+      - UNCHAINED_GRIDFS_PUT_UPLOAD_SECRET=3f9f2a9c6b1d4e0a8c5f7a2b9e6d4c1f
+      - UNCHAINED_COOKIE_DOMAIN=localhost
+      - EMAIL_WEBSITE_NAME=Unchained
+      - EMAIL_FROM=noreply@unchained.local
+      - EMAIL_WEBSITE_URL=http://localhost:3001
+      - UNCHAINED_SECRET=secret
+      - UNCHAINED_TOKEN_SECRET=random-token-that-is-not-secret-at-all
+      - UNCHAINED_COOKIE_SAMESITE=none
+      - UNCHAINED_GRAPHQL_ENDPOINT=/graphql
+      - UNCHAINED_GRAPHQL_PLAYGROUND_ENABLED=true
+      - UNCHAINED_GRAPHQL_INTROSPECTION=true
+      - LOG_LEVEL=warn
+      - LOG_FILTER=-api,-worker
+      - DISABLE_SCHEDULED_TASKS=UPDATE_COINBASE_RATES,UPDATE_ECB_RATES
+      - NODE_OPTIONS=--max_old_space_size=4096
+      - DISABLE_COINBASE_RATES=true
+      - DISABLE_CRON_JOBS=true
+      - DISABLE_WORKER=true
+      - PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+      - PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./engine:/app
+      - /app/node_modules
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+    restart: unless-stopped
+ 
+  storefront:
+    build:
+      context: ./storefront
+      dockerfile: Dockerfile
+      args:
+        UNCHAINED_ENDPOINT: http://engine:3001/graphql
+    environment:
+      - NODE_ENV=development
+      - NODE_OPTIONS=--max_old_space_size=4096
+      - UNCHAINED_ENDPOINT=http://engine:3001/graphql
+      - GRAPHQL_ENDPOINT=http://engine:3001/graphql
+      - NEXT_PUBLIC_ENGINE_API_URL=http://engine:3001/graphql
+      - NEXT_PUBLIC_UNCHAINED_ENDPOINT=http://engine:3001/graphql
+      - NEXT_PUBLIC_GRAPHQL_ENDPOINT=http://engine:3001/graphql
+      - NEXT_PUBLIC_ENABLE_LOGGING=false
+      - CHOKIDAR_USEPOLLING=true
+      - WATCHPACK_POLLING=true
+      - NEXT_TELEMETRY_DISABLED=1
+    ports:
+      - "3000:3000"
+    working_dir: /usr/src/app
+    stdin_open: true
+    tty: true
+    depends_on:
+      engine:
+        condition: service_healthy
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+ 
+networks:
+  app-network:
+    driver: bridge
+ 
+# Removed mongodb_data volume as we're using Azure Cosmos DB
+# MongoDB data is stored on the host machine
+ 

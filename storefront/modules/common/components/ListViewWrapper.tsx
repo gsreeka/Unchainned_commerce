@@ -1,6 +1,6 @@
 import React from 'react';
 import classNames from 'classnames';
-import { Squares2X2Icon, ListBulletIcon } from '@heroicons/react/24/outline';
+import { Squares2X2Icon, ListBulletIcon } from '@heroicons/react/20/solid';
 import useLocalStorage from '../hooks/useLocalStorage';
 
 type ViewMode = 'grid' | 'list';

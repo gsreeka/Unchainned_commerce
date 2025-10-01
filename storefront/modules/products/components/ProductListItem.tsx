@@ -5,22 +5,18 @@ import Link from 'next/link';
 import defaultNextImageLoader from '../../common/utils/defaultNextImageLoader';
 import ProductPrice from '../../common/components/ProductPrice';
 import getProductHref from '../../common/utils/getProductHref';
-
 const ProductListItem = ({ product }) => {
   const firstMediaUrl = product?.media?.[0]?.file?.url;
 
   return (
     <div className="group relative">
-      <div className="relative aspect-square overflow-hidden rounded-lg bg-slate-50 dark:bg-slate-900">
-        <Link href={getProductHref(product?.texts?.slug)}>
+      <div className="aspect-[3/4] overflow-hidden rounded bg-white flex items-center justify-center p-2">
+        <Link href={getProductHref(product?.texts?.slug)} className="h-full w-full flex items-center justify-center">
           {firstMediaUrl ? (
-            <Image
+            <img
               src={firstMediaUrl}
               alt={product?.texts?.title}
-              layout="fill"
-              objectFit="cover"
-              className="transition-all duration-300 group-hover:opacity-75"
-              loader={defaultNextImageLoader}
+              className="max-w-full max-h-full object-contain transition-all duration-300 group-hover:opacity-75"
             />
           ) : (
             <div className="flex h-full w-full items-center justify-center">

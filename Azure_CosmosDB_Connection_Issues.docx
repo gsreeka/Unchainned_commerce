@@ -1,0 +1,117 @@
+Azure Cosmos DB Connection Issues Documentation
+==============================================
+
+1. Current Environment
+---------------------
+- **Application**: Engine Storefront
+- **Database**: Azure Cosmos DB Emulator
+- **Host OS**: Windows
+- **Containerization**: Docker
+
+2. Connection Issues
+------------------
+### 2.1 Primary Issues
+- Docker containers cannot connect to Azure Cosmos DB Emulator running on the host
+- Connection refusals to both IPv6 (::1:8081) and IPv4 (127.0.0.1:8081)
+- Network resolution problems with `host.docker.internal`
+
+### 2.2 Configuration Attempts
+1. **Connection Strings Tried**:
+   - `localhost:8081` (Failed - containers can't reach host via localhost)
+   - `host.docker.internal:8081` (Current attempt, still failing)
+   - Direct IP address (Not yet attempted)
+
+2. **Docker Network Configuration**:
+   - Added `extra_hosts` configuration
+   - Created custom bridge network
+   - Tried `network_mode: host` (caused other issues)
+
+3. **Environment Variables**:
+   ```
+   MONGO_URL=mongodb://cosmosdb:C2y6yDjf5%2FR%2Bob0N8A7Cgv30VRDjEWEhLM%2B4QDUb8w%3D%3D@host.docker.internal:8081/admin?ssl=true&replicaSet=globaldb&retrywrites=false&tlsAllowInvalidCertificates=true
+   ```
+
+3. Current Configuration
+----------------------
+### 3.1 docker-compose.yml
+```yaml
+services:
+  engine:
+    build: 
+      context: ./engine
+      dockerfile: Dockerfile
+    container_name: engine
+    ports:
+      - "3001:3001"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - app-network
+    # ... other configs ...
+
+  storefront:
+    # ... storefront config ...
+    depends_on:
+      engine:
+        condition: service_healthy
+
+networks:
+  app-network:
+    driver: bridge
+```
+
+### 3.2 Environment Files
+**engine/.env**
+```
+NODE_ENV=development
+PORT=3001
+MONGO_URL=mongodb://cosmosdb:C2y6yDjf5%2FR%2Bob0N8A7Cgv30VRDjEWEhLM%2B4QDUb8w%3D%3D@host.docker.internal:8081/admin?ssl=true&replicaSet=globaldb&retrywrites=false&tlsAllowInvalidCertificates=true
+```
+
+**storefront/.env**
+```
+NODE_ENV=development
+GRAPHQL_ENDPOINT=http://localhost:3001/graphql
+UNCHAINED_ENDPOINT=http://localhost:3001/graphql
+NEXT_PUBLIC_UNCHAINED_ENDPOINT=http://localhost:3001/graphql
+```
+
+4. Troubleshooting Steps Taken
+---------------------------
+1. Verified Azure Cosmos DB Emulator is running on host
+2. Confirmed connection to emulator from host browser
+3. Tested network connectivity from host to emulator
+4. Modified Docker network configuration
+5. Tried different connection string formats
+
+5. Potential Solutions to Try
+--------------------------
+1. **Network Configuration**:
+   - Try using the host's actual IP instead of `host.docker.internal`
+   - Check Windows Firewall settings for port 8081
+   - Verify Docker network settings in Docker Desktop
+
+2. **Azure Cosmos DB Emulator**:
+   - Check if emulator is binding to all interfaces
+   - Review emulator logs for connection attempts
+   - Consider restarting the emulator with different parameters
+
+3. **Alternative Approaches**:
+   - Run Azure Cosmos DB Emulator in a container
+   - Use a cloud instance of Cosmos DB for development
+   - Consider using a local MongoDB instance instead
+
+6. Error Logs
+-----------
+```
+MongoServerSelectionError: connect ECONNREFUSED ::1:8081, connect ECONNREFUSED 127.0.0.1:8081
+at Topology.selectServer (/app/node_modules/mongodb/lib/sdam/topology.js:327:38)
+...
+```
+
+7. Next Steps
+-----------
+1. Test direct IP connection
+2. Check Windows Firewall logs
+3. Review Docker network configuration
+4. Consider alternative development database solutions

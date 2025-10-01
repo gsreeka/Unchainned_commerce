@@ -1,4 +1,5 @@
 import { useIntl } from 'react-intl';
+import { useState } from 'react';
 
 import Image from 'next/image';
 
@@ -7,9 +8,10 @@ import defaultNextImageLoader from '../modules/common/utils/defaultNextImageLoad
 import useProducts from '../modules/products/hooks/useProducts';
 import useAssortments from '../modules/assortment/hooks/useAssortments';
 import ProductList from '../modules/products/components/ProductList';
-import CategoryListItem from '../modules/assortment/components/CategoryListItem';
+import CategoryList from '../modules/assortment/components/CategoryList';
 import Loading from '../modules/common/components/Loading';
 import ListViewWrapper from '../modules/common/components/ListViewWrapper';
+import { Squares2X2Icon, ListBulletIcon } from '@heroicons/react/20/solid';
 
 const Home = () => {
   const {
@@ -21,6 +23,7 @@ const Home = () => {
     includeLeaves: true,
   });
   const { formatMessage } = useIntl();
+  const [categoryViewMode, setCategoryViewMode] = useState<'grid' | 'list'>('grid');
 
   return (
     <>
@@ -77,8 +80,8 @@ const Home = () => {
 
         {/* Categories Section */}
         <section className="py-16">
-          <div className="px-4 sm:px-6 lg:px-8 mb-12">
-            <div className="text-center">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-12">
               <h2 className="text-3xl font-semibold text-slate-900 dark:text-white sm:text-4xl">
                 {formatMessage({
                   id: 'browse_categories',
@@ -88,26 +91,70 @@ const Home = () => {
               <p className="mt-4 text-lg text-slate-600 dark:text-slate-300">
                 {formatMessage({
                   id: 'categories_subtitle',
-                  defaultMessage:
-                    'Explore our wide range of product categories',
+                  defaultMessage: 'Explore our wide range of product categories',
                 })}
               </p>
             </div>
-          </div>
 
-          {assortmentsLoading ? (
-            <div className="px-4 sm:px-6 lg:px-8">
+            {assortmentsLoading ? (
               <Loading />
-            </div>
-          ) : (
-            <div className="pb-4 grid grid-cols-1 gap-6 gap-y-16 sm:grid-cols-2 lg:grid-cols-3">
-              {assortments.map((category) => (
-                <div key={category._id} className="transition-all duration-300">
-                  <CategoryListItem category={category} />
-                </div>
-              ))}
-            </div>
-          )}
+            ) : (
+              <ListViewWrapper
+                title={formatMessage({
+                  id: 'browse_categories',
+                  defaultMessage: 'Browse Categories',
+                })}
+                subtitle={formatMessage({
+                  id: 'categories_subtitle',
+                  defaultMessage: 'Explore our wide range of product categories',
+                })}
+                storageKey="categoryViewMode"
+              >
+                {(viewMode) => (
+                  <div className={viewMode === 'grid' ? 'grid grid-cols-1 gap-6 gap-y-16 sm:grid-cols-2 lg:grid-cols-3' : 'space-y-6'}>
+                    {assortments.map((category) => (
+                      <div 
+                        key={category._id} 
+                        className={viewMode === 'list' ? 'group relative bg-white border border-slate-200 rounded-lg overflow-hidden transition-all duration-300 hover:shadow-lg dark:bg-slate-900 dark:border-0' : 'group relative'}
+                      >
+                        {viewMode === 'list' ? (
+                          <div className="lg:flex gap-5">
+                            <div className="w-full h-100 lg:h-64 lg:w-48 flex-shrink-0 relative overflow-hidden bg-white dark:bg-slate-700 p-4 flex items-center justify-center">
+                              {category.media?.[0]?.url ? (
+                                <img
+                                  src={category.media[0].url}
+                                  alt={category.texts?.title}
+                                  className="max-w-full max-h-full object-contain transition-all duration-300 group-hover:opacity-75"
+                                />
+                              ) : (
+                                <div className="flex h-full w-full items-center justify-center">
+                                  <div className="h-8 w-8 text-slate-400 dark:text-slate-500" />
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex-1 p-6 flex flex-col justify-between">
+                              <div>
+                                <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-2">
+                                  {category.texts?.title}
+                                </h3>
+                                {category.texts?.subtitle && (
+                                  <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">
+                                    {category.texts.subtitle}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <CategoryList categories={[category]} viewMode="grid" />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </ListViewWrapper>
+            )}
+          </div>
         </section>
 
         {/* Products Section */}

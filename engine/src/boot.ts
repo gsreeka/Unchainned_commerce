@@ -38,7 +38,9 @@ try {
   fastify.register(fastifyRouter, {
     prefix: "/",
   });
-
+  
+  console.log("************");
+  
   await fastify.listen({
     host: "::",
     port: process.env.PORT ? parseInt(process.env.PORT) : 3000,

@@ -11,16 +11,12 @@ const CategoryListItem = ({ category }) => {
     <Link href={`shop/${category?.texts?.slug}`} className="group block">
       <div className="bg-white dark:bg-slate-950 transition-all duration-300">
         {/* Image Container */}
-        <div className="relative aspect-[5/3.2] overflow-hidden bg-slate-50 dark:bg-slate-900 rounded-md mb-4">
+        <div className="h-96 bg-white dark:bg-slate-900 rounded-md mb-4 p-4 flex items-center justify-center overflow-hidden">
           {mediaUrl ? (
-            <Image
+            <img
               src={mediaUrl}
               alt={category?.texts.title}
-              layout="fill"
-              objectFit="cover"
-              objectPosition="center"
-              className="transition-all duration-300 rounded-md group-hover:opacity-75"
-              loader={defaultNextImageLoader}
+              className="max-w-full max-h-full object-contain transition-all duration-300 group-hover:opacity-75"
             />
           ) : (
             <div className="flex items-center justify-center h-full bg-slate-100 dark:bg-slate-700 rounded-md">

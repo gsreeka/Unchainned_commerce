@@ -27,8 +27,10 @@
   },
   "scripts": {
     "lint": "prettier -w . && tsc --noEmit",
-    "start": "node --no-warnings --env-file .env.defaults --env-file-if-exists=.env --import ./load_env.js ./src/boot.ts",
-    "dev": "node --no-warnings --env-file .env.defaults --env-file-if-exists=.env --import ./load_env.js --watch ./src/boot.ts"
+    "prestart": "node -e \"const fs = require('fs'); if (fs.existsSync('.env.defaults')) { require('dotenv').config({ path: '.env.defaults' }); } if (fs.existsSync('.env')) { require('dotenv').config({ path: '.env' }); } require('dotenv').config();\"",
+    "start": "node --no-warnings --import ./load_env.js ./src/boot.ts",
+    "predev": "node -e \"const fs = require('fs'); if (fs.existsSync('.env.defaults')) { require('dotenv').config({ path: '.env.defaults' }); } if (fs.existsSync('.env')) { require('dotenv').config({ path: '.env' }); } require('dotenv').config();\"",
+    "dev": "node --no-warnings --import ./load_env.js --watch ./src/boot.ts"
   },
   "dependencies": {
     "@ai-sdk/openai": "^2.0.26",
@@ -38,8 +40,10 @@
     "@scure/bip32": "^2.0.0",
     "@scure/btc-signer": "^2.0.0",
     "@unchainedshop/admin-ui": "^4.0.34",
+    "@unchainedshop/api": "canary",
     "@unchainedshop/core-delivery": "canary",
     "@unchainedshop/core-payment": "canary",
+    "@unchainedshop/mongodb": "canary",
     "@unchainedshop/platform": "canary",
     "@unchainedshop/plugins": "canary",
     "@unchainedshop/ticketing": "canary",
@@ -47,6 +51,7 @@
     "file-type": "^21.0.0",
     "graphql": "^16.11.0",
     "graphql-yoga": "^5.15.2",
+    "mongodb": "^6.12.0",
     "nodemailer": "^7.0.6",
     "open": "^10.2.0",
     "stripe": "^18.5.0",
