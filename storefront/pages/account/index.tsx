@@ -148,7 +148,7 @@ const Account = () => {
 
           {/* General */}
           <ProfileView user={user} />
-          <EmailAddresses {...user} />
+          <EmailAddresses emails={user?.emails || []} />
 
           {/* Address */}
           <Address user={user} />

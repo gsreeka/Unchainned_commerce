@@ -15,34 +15,80 @@ export const APOLLO_STATE_PROP_NAME = '__APOLLO_STATE__';
 
 let apolloClient;
 
-const uri =
-  typeof window === 'undefined'
-    ? process.env.UNCHAINED_ENDPOINT || 'http://localhost:4010/graphql'
-    : `${window.origin}/graphql`;
+// Use the GraphQL endpoint
+const GRAPHQL_ENDPOINT = 'http://localhost:3001/graphql';
 
 const httpLink = new HttpLink({
-  uri,
-  credentials: 'same-origin', // Additional fetch() options like `credentials` or `headers`
+  uri: GRAPHQL_ENDPOINT,
+  credentials: 'include', // Changed from 'same-origin' to 'include' for cross-origin requests
+  headers: {
+    'Content-Type': 'application/json',
+  },
 });
 
-function createApolloClient({ locale }) {
-  const middlewareLink = new ApolloLink((operation, forward) => {
-    const headers = {};
-    if (locale) {
-      headers['accept-language'] = locale;
-    }
-    operation.setContext({ headers });
+function createApolloClient({ locale } = { locale: null }) {
+  const authMiddleware = new ApolloLink((operation, forward) => {
+    // Get the authentication token from local storage if it exists
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    
+    // Set the authorization header if token exists
+    const headers = {
+      ...(locale && { 'accept-language': locale }),
+      ...(token && { 'Authorization': `JWT ${token}` }),
+    };
+    
+    operation.setContext({ 
+      headers,
+      // Ensure we're not using the cache for auth-related operations
+      fetchPolicy: 'network-only',
+    });
     return forward(operation);
   });
 
-  return new ApolloClient({
-    ssrMode: typeof window === 'undefined',
-    link: ApolloLink.from([middlewareLink, httpLink]),
-    cache: new InMemoryCache({
-      possibleTypes,
-      typePolicies,
-    }),
+  const cache = new InMemoryCache({
+    possibleTypes,
+    typePolicies: {
+      ...typePolicies,
+      Query: {
+        ...(typePolicies?.Query || {}),
+        fields: {
+          ...(typePolicies?.Query?.fields || {}),
+          me: {
+            merge: true, // This ensures the me query is properly merged
+          },
+        },
+      },
+    },
   });
+
+  const client = new ApolloClient({
+    ssrMode: typeof window === 'undefined',
+    link: ApolloLink.from([authMiddleware, httpLink]),
+    cache,
+    defaultOptions: {
+      watchQuery: {
+        fetchPolicy: 'cache-and-network',
+        nextFetchPolicy: 'cache-first',
+      },
+      query: {
+        fetchPolicy: 'network-only',
+      },
+    },
+  });
+
+  // Initialize the cache with the user data if available
+  if (typeof window !== 'undefined') {
+    const token = localStorage.getItem('token');
+    if (token) {
+      // This will trigger a refetch of the current user
+      client.resetStore().catch(() => {
+        // Clear the token if it's invalid
+        localStorage.removeItem('token');
+      });
+    }
+  }
+
+  return client;
 }
 
 export function initializeApollo(

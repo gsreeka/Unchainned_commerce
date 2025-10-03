@@ -8,6 +8,7 @@ import {
   UserCircleIcon,
 } from '@heroicons/react/24/outline';
 import { useRouter } from 'next/router';
+import { useEffect } from 'react';
 import OrderButton from '../../orders/components/UserOrderButton';
 import useUser from '../hooks/useUser';
 import { useApollo } from '../../apollo/apolloClient';
@@ -15,56 +16,82 @@ import logOut from '../hooks/logOut';
 import { useAppContext } from '../../common/components/AppContextWrapper';
 
 const LoginCart = () => {
-  const { user } = useUser();
+  const { user, loading, refetch } = useUser();
   const { formatMessage } = useIntl();
   const { isCartOpen, toggleCart } = useAppContext();
   const router = useRouter();
   const apollo = useApollo({ locale: router.locale }, {});
+
+  // Debug log user state changes
+  useEffect(() => {
+    console.log('LoginCart - User state changed:', { user, loading });
+  }, [user, loading]);
+
+  // Check auth state on mount and route changes
+  useEffect(() => {
+    const checkAuth = async () => {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      console.log('Route changed - Auth check:', { hasToken: !!token, hasUser: !!user });
+      
+      if (token && !user && !loading) {
+        console.log('Token exists but no user data, refetching...');
+        try {
+          await refetch();
+        } catch (err) {
+          console.error('Error refetching user data:', err);
+        }
+      }
+    };
+
+    // Initial check
+    checkAuth();
+
+    // Check on route changes
+    router.events.on('routeChangeComplete', checkAuth);
+    return () => {
+      router.events.off('routeChangeComplete', checkAuth);
+    };
+  }, [user, loading, refetch, router.events]);
 
   const onLogout = async () => {
     await logOut(apollo);
     router.push('/login');
   };
 
-  return user ? (
+  return (
     <div className="flex items-center gap-x-3">
-      {/* Account Link */}
-      {!user?.isGuest && (
-        <Link
-          href="/account"
-          className="text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white transition-colors p-2"
-        >
-          <UserCircleIcon className="h-6 w-6" />
-        </Link>
-      )}
+      {/* Account Icon - Always visible */}
+      <Link
+        href={user ? "/account" : "/login"}
+        className="text-white/80 hover:text-white transition-colors p-2"
+        title={user ? "My Account" : "Login"}
+      >
+        <UserCircleIcon className="h-6 w-6" />
+      </Link>
 
       {/* Cart Button */}
       <button
-        className="relative text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white transition-colors p-2"
+        className="relative text-white/80 hover:text-white transition-colors p-2"
         onClick={() => toggleCart(!isCartOpen)}
       >
         <ShoppingCartIcon className="h-6 w-6" />
         {user?.cart?.items?.length ? (
-          <span className="absolute -top-1 -right-1 inline-flex h-5 w-5 items-center justify-center rounded-full bg-slate-950 text-xs font-semibold text-white">
+          <span className="absolute -top-1 -right-1 inline-flex h-5 w-5 items-center justify-center rounded-full bg-blue-900 text-xs font-semibold text-white">
             {user?.cart?.items.reduce((acc, item) => acc + item.quantity, 0)}
           </span>
         ) : null}
       </button>
-    </div>
-  ) : (
-    <div className="flex items-center gap-x-3">
-      <Link
-        href="/login"
-        className="text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white transition-colors p-2"
-      >
-        <UserCircleIcon className="h-6 w-6" />
-      </Link>
-      <button
-        className="relative text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white transition-colors p-2"
-        onClick={() => toggleCart(!isCartOpen)}
-      >
-        <ShoppingCartIcon className="h-6 w-6" />
-      </button>
+
+      {/* Logout Button (only for logged-in users) */}
+      {user && !user.isGuest && (
+        <button
+          onClick={onLogout}
+          className="text-white/80 hover:text-white transition-colors p-2"
+          title="Logout"
+        >
+          <ArrowRightOnRectangleIcon className="h-6 w-6" />
+        </button>
+      )}
     </div>
   );
 };

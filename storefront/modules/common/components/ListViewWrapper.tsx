@@ -26,14 +26,14 @@ const ListViewWrapper: React.FC<ListViewWrapperProps> = ({
     <div className={classNames('space-y-4', className)}>
       <div className="container mx-auto py-8">
         {(title || subtitle) && (
-          <div className="mb-8">
+          <div className="mb-8 text-center">
             {title && (
               <h1 className="text-3xl font-semibold tracking-tight text-slate-900 dark:text-white mb-2">
                 {title}
               </h1>
             )}
             {subtitle && (
-              <p className="text-lg text-slate-600 dark:text-slate-300">
+              <p className="text-lg text-slate-600 dark:text-slate-300 max-w-2xl mx-auto">
                 {subtitle}
               </p>
             )}

@@ -66,14 +66,28 @@ build
 *.pem
 *.p8
 *.key
-*.crt
-*.cer
-*.pfx
-*.p12
-*.der
 
 # Local env files
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
+
+# Git and version control
+.git
+.gitignore
+.gitattributes
+
+# Linting and formatting
+.eslintcache
+.prettierignore
+
+# Documentation
+README.md
+CHANGELOG.md
+*.md
+
+# Docker files (don't copy Docker files into the container)
+Dockerfile*
+docker-compose*
+.dockerignore

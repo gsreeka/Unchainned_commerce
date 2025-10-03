@@ -43,7 +43,6 @@ services:
       - app-network
     healthcheck:
       test: ["CMD", "wget", "--spider", "-q", "http://localhost:3001/health"]
-      interval: 30s
       timeout: 10s
       retries: 5
       start_period: 120s
@@ -53,6 +52,7 @@ services:
     build:
       context: ./storefront
       dockerfile: Dockerfile
+      target: development
       args:
         UNCHAINED_ENDPOINT: http://engine:3001/graphql
     environment:
@@ -67,11 +67,16 @@ services:
       - CHOKIDAR_USEPOLLING=true
       - WATCHPACK_POLLING=true
       - NEXT_TELEMETRY_DISABLED=1
+      - WDS_SOCKET_PORT=0
     ports:
       - "3000:3000"
     working_dir: /usr/src/app
     stdin_open: true
     tty: true
+    volumes:
+      - ./storefront:/usr/src/app
+      - /usr/src/app/.next
+      - /usr/src/app/node_modules
     depends_on:
       engine:
         condition: service_healthy
@@ -83,11 +88,9 @@ services:
       timeout: 10s
       retries: 3
       start_period: 10s
- 
 networks:
   app-network:
     driver: bridge
- 
+
 # Removed mongodb_data volume as we're using Azure Cosmos DB
 # MongoDB data is stored on the host machine
- 

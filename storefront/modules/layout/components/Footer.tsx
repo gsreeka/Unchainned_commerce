@@ -1,10 +1,28 @@
 import Link from 'next/link';
 import { useIntl } from 'react-intl';
+import { ReactNode, ComponentType } from 'react';
 
 import LanguageSwitch from '../../common/components/LanguageSwitch';
 import useAssortments from '../../assortment/hooks/useAssortments';
 
-const getFooterNavigation = (formatMessage) => ({
+interface NavItem {
+  name: string;
+  href: string;
+  external?: boolean;
+  icon?: ComponentType<{ className?: string }>;
+}
+
+interface FooterNavigation {
+  products: NavItem[];
+  customerService: NavItem[];
+  company: NavItem[];
+  legal: NavItem[];
+  nema: NavItem[];
+  bottomLinks: NavItem[];
+  social: NavItem[];
+}
+
+const getFooterNavigation = (formatMessage: any): FooterNavigation => ({
   products: [],
   customerService: [
     {
@@ -38,24 +56,35 @@ const getFooterNavigation = (formatMessage) => ({
       href: '/privacy-policy',
     },
   ],
-  unchained: [
+  nema: [
     {
-      name: formatMessage({ id: 'github', defaultMessage: 'GitHub' }),
-      href: 'https://github.com/unchainedshop',
-      external: true,
+      name: formatMessage({ id: 'about_nema', defaultMessage: 'About NEMA' }),
+      href: '/about-nema',
+      external: false,
     },
     {
-      name: formatMessage({ id: 'docs', defaultMessage: 'Documentation' }),
-      href: 'https://docs.unchained.shop',
-      external: true,
-    },
-    {
-      name: formatMessage({ id: 'support', defaultMessage: 'Support' }),
-      href: 'https://unchained.shop/contact',
-      external: true,
+      name: formatMessage({ id: 'standards', defaultMessage: 'Standards' }),
+      href: '/standards',
+      external: false,
     },
   ],
-  bottomLinks: [],
+  bottomLinks: [
+    {
+      name: formatMessage({ id: 'contact', defaultMessage: 'Contact' }),
+      href: '/contact',
+    },
+    {
+      name: formatMessage({ id: 'privacy', defaultMessage: 'Privacy Policy' }),
+      href: '/privacy-policy',
+    },
+    {
+      name: formatMessage({ 
+        id: 'terms', 
+        defaultMessage: 'Terms & Conditions' 
+      }),
+      href: '/terms-conditions',
+    },
+  ],
   social: [],
 });
 
@@ -83,7 +112,9 @@ const Footer = () => {
               className="text-slate-400 hover:text-slate-500"
             >
               <span className="sr-only">{item.name}</span>
-              <item.icon className="h-6 w-6" aria-hidden="true" />
+              {item.icon && (
+                <item.icon className="h-6 w-6" aria-hidden="true" />
+              )}
             </a>
           ))}
         </div>
@@ -93,7 +124,7 @@ const Footer = () => {
             <div className="uppercase text-lg font-semibold text-slate-900 dark:text-white mb-6">
               {formatMessage({
                 id: 'shop_title',
-                defaultMessage: 'Unchained Store',
+                defaultMessage: 'NEMA Standard Store',
               })}
             </div>
 
@@ -188,10 +219,10 @@ const Footer = () => {
             </div>
             <div>
               <h3 className="text-sm font-semibold text-slate-500 dark:text-slate-50">
-                Unchained
+                NEMA
               </h3>
               <ul className="mt-3 space-y-3">
-                {footerNavigation.unchained.map((item) => (
+                {footerNavigation.nema.map((item) => (
                   <li key={item.name} className="text-sm font-medium">
                     {item.external ? (
                       <a

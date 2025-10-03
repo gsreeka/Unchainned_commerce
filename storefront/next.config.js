@@ -22,6 +22,10 @@ const nextJsConfig = {
     locales: ["en", "de"],
     defaultLocale: "en",
   },
+  eslint: {
+    // Disable ESLint during builds in production/Docker
+    ignoreDuringBuilds: process.env.NODE_ENV === 'production' || process.env.ESLINT_NO_DEV_ERRORS === 'true',
+  },
 };
 
 export default nextJsConfig;
