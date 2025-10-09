@@ -4,19 +4,17 @@ import Button from "../../common/components/Button"
 
 import { useMsal } from "@azure/msal-react"
 import { useRouter } from "next/router"
-import { useState, useEffect } from "react"
 import { InteractionStatus, PopupRequest } from "@azure/msal-browser"
-import { getMsalLoginRequest } from "../config/msalConfig"
 
 async function fetchEnv(baseUrl = ''): Promise<Record<string, string | null> | null> {
-  try {
-    const url = baseUrl ? `${baseUrl.replace(/\/$/, '')}/env` : '/env'
-    const res = await fetch(url, { headers: { Accept: 'application/json' } })
-    if (!res.ok) return null
-    return await res.json()
-  } catch {
-    return null
-  }
+    try {
+        const url = baseUrl ? `${baseUrl.replace(/\/$/, '')}/env` : '/env'
+        const res = await fetch(url, { headers: { Accept: 'application/json' } })
+        if (!res.ok) return null
+        return await res.json()
+    } catch {
+        return null
+    }
 }
 
 export default function AzureB2C() {
@@ -29,7 +27,7 @@ export default function AzureB2C() {
             const msalLoginRequest: PopupRequest = {
                 redirectUri: env?.NEXT_PUBLIC_REDIRECT_URI ?? window.location.origin,
                 scopes: ["openid", "profile", "email", env?.NEXT_PUBLIC_API_READ_SCOPE],
-            } 
+            }
             const authResult = await instance.loginPopup(msalLoginRequest)
             if (!instance || inProgress !== InteractionStatus.None) return
             if (!authResult) return

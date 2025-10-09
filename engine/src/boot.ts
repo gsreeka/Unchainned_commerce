@@ -67,7 +67,6 @@ try {
         client.getSigningKey(header.kid!, (err, key) => {
           if (err) return callback(err as any, undefined);
           const pub = key?.getPublicKey();
-          console.log(pub)
           callback(null, pub);
         });
       }
@@ -77,9 +76,7 @@ try {
         getKey,
         { audience: audience, issuer},
         (err, decoded) => {
-          console.log("Error from verification", err)
           if (err) reply.code(500).send({ error: 'Token validation failure' });
-          console.log(decoded)
           if (decoded) done()
         }
       );
