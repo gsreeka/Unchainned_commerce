@@ -22,12 +22,8 @@ import type { ApolloClient } from '@apollo/client';
 
 const logOut = async (apolloClient: any) => {
   try {
-    // Clear the token from localStorage
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('token');
-    }
-    
-    // Reset the Apollo store
+    // Reset the Apollo store to clear cached user data
+    // Authentication cookies will be cleared by the server or expire naturally
     if (apolloClient) {
       await apolloClient.resetStore();
     }
@@ -35,10 +31,6 @@ const logOut = async (apolloClient: any) => {
     return true;
   } catch (error) {
     console.error('Error during logout:', error);
-    // Even if there's an error, we want to clear the token
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('token');
-    }
     return false;
   }
 };

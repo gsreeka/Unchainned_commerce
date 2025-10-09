@@ -2,7 +2,7 @@ import { gql } from '@apollo/client';
 import { useMutation } from '@apollo/client/react';
 import { LOGIN_AS_GUEST_MUTATION } from '../../auth/hooks/useLoginAsGuest';
 import useUser from '../../auth/hooks/useUser';
-
+ 
 export const ADD_CART_PRODUCT_MUTATION = gql`
   mutation AddCartProduct(
     $productId: ID!
@@ -59,40 +59,63 @@ export const ADD_CART_PRODUCT_MUTATION = gql`
     }
   }
 `;
-
+ 
 const useAddCartProduct = () => {
   const [addCartProductMutation, { client, ...mutationResults }] =
     useMutation<any>(ADD_CART_PRODUCT_MUTATION);
   const { user } = useUser();
   const [loginAsGuestMutation] = useMutation<any>(LOGIN_AS_GUEST_MUTATION);
-
-  const addCartProduct = async (
-    variables: {
-      configuration: Array<{ key: string; value: string }>;
-      quantity: number;
-      productId: string;
-    },
-    options,
-  ) => {
+ 
+  const addCartProduct = async ({
+    productId,
+    quantity = 1,
+    configuration = [],
+  }: {
+    productId: string;
+    quantity?: number;
+    configuration?: Array<{ key: string; value: string }>;
+  }) => {
     try {
       if (!user) {
-        await loginAsGuestMutation({
-          awaitRefetchQueries: true,
-        });
-        await client.resetStore();
+        const { data } = await loginAsGuestMutation();
+        if (data?.loginAsGuest) {
+          // Wait for the user to be logged in
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
       }
-      await addCartProductMutation({
-        variables,
-        ...options,
+ 
+      const result = await addCartProductMutation({
+        variables: {
+          productId,
+          quantity,
+          configuration,
+        },
+        update: (cache, { data: { addCartProduct } }) => {
+          // Update the cache with the new cart data
+          cache.modify({
+            id: cache.identify({
+              __typename: 'User',
+              _id: user?._id,
+            }),
+            fields: {
+              cart: () => addCartProduct,
+            },
+          });
+        },
       });
+ 
+      return result;
     } catch (err: any) {
+      console.error('Error adding to cart:', err);
       if (err.message.toLowerCase().includes('not enough in stock')) {
         alert('Out of stock');
+      } else {
+        alert('Failed to add item to cart. Please try again.');
       }
+      throw err;
     }
   };
-
+ 
   return [addCartProduct, mutationResults];
 };
-
 export default useAddCartProduct;

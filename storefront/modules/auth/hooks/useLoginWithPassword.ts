@@ -1,5 +1,7 @@
 import { gql, OperationVariables } from '@apollo/client';
 import { useMutation } from '@apollo/client/react';
+import { useAppContext } from '../../common/components/AppContextWrapper';
+import isEmail from '../../common/utils/isEmail';
 
 interface GraphQLError {
   message: string;
@@ -13,32 +15,11 @@ interface GraphQLResponseError {
   networkError?: Error | null;
   message: string;
 }
-import { useAppContext } from '../../common/components/AppContextWrapper';
-import isEmail from '../../common/utils/isEmail';
-
-interface UserEmail {
-  address: string;
-  verified: boolean;
-}
-
-interface LoggedInUser {
-  _id: string;
-  username: string;
-  emails: UserEmail[];
-  roles: string[];
-}
 
 interface LoginResponse {
   loginWithPassword: {
     _id: string;
-    token: string;
-    tokenExpires: string;
-    user: {
-      _id: string;
-      username: string;
-      roles: string[];
-    };
-  };
+  } | null;
 }
 
 interface LoginVariables extends OperationVariables {
@@ -59,13 +40,6 @@ const LOG_IN_WITH_PASSWORD_MUTATION = gql`
       password: $plainPassword
     ) {
       _id
-      token
-      tokenExpires
-      user {
-        _id
-        username
-        roles
-      }
     }
   }
 `;
@@ -79,16 +53,27 @@ const useLoginWithPassword = () => {
     },
   );
 
-  const logInWithPassword = async ({ usernameOrEmail, password }: { usernameOrEmail: string; password: string }) => {
+  const logInWithPassword = async ({ 
+    usernameOrEmail, 
+    password,
+    disableHashing 
+  }: { 
+    usernameOrEmail: string; 
+    password: string;
+    disableHashing?: boolean;
+  }) => {
     try {
       console.group('Login Debug');
       console.log('Login attempt started for:', usernameOrEmail);
+      console.log('emailSupportDisabled:', emailSupportDisabled);
+      console.log('isEmail result:', isEmail(usernameOrEmail));
       
       const variables: LoginVariables = {
         plainPassword: password.trim(),
       };
 
-      if (!emailSupportDisabled && isEmail(usernameOrEmail)) {
+      // Always use email if it's a valid email format, regardless of emailSupportDisabled
+      if (isEmail(usernameOrEmail)) {
         variables.email = usernameOrEmail.trim();
         console.log('Using email for login');
       } else {
@@ -110,25 +95,42 @@ const useLoginWithPassword = () => {
 
       console.log('Login response:', result);
 
+      // Handle GraphQL errors first (these come through the errorPolicy: 'all' setting)
+      // Note: With errorPolicy: 'all', GraphQL errors don't throw but are included in the result
+
       // Handle the response
       const loginData = result.data?.loginWithPassword;
-      if (loginData?.token) {
-        console.log('Login successful, storing token');
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('token', loginData.token);
-          console.log('Token stored in localStorage');
-          
-          // Force a refetch of the current user
+      if (loginData && loginData._id) {
+        console.log('Login successful, user ID:', loginData._id);
+        
+        try {
+          // Authentication is handled via cookies/sessions
+          // Reset Apollo cache to refetch user data with new authentication state
           if (client) {
             await client.resetStore();
-            console.log('Apollo cache reset');
+            console.log('Login successful - Apollo cache reset');
           }
+          
+          return { 
+            data: loginData, 
+            errors: [] 
+          };
+        } catch (resetError) {
+          console.error('Error resetting Apollo store:', resetError);
+          return { 
+            data: null, 
+            errors: [{ message: 'Failed to complete login process. Please try again.' }]
+          };
         }
-        return { data: loginData, error: null };
-      } else {
-        const errorMessage = 'No token received from server';
+      } else if (loginData === null) {
+        // This means authentication failed
+        const errorMessage = 'Invalid credentials provided';
         console.error(errorMessage);
-        return { data: null, error: errorMessage };
+        return { data: null, errors: [{ message: errorMessage }] };
+      } else {
+        const errorMessage = 'Login failed - no user data received';
+        console.error(errorMessage);
+        return { data: null, errors: [{ message: errorMessage }] };
       }
     } catch (error: unknown) {
       console.error('Login error:', error);
@@ -147,7 +149,7 @@ const useLoginWithPassword = () => {
         }
       }
       
-      return { data: null, error: errorMessage };
+      return { data: null, errors: [{ message: errorMessage }] };
     } finally {
       console.groupEnd();
     }

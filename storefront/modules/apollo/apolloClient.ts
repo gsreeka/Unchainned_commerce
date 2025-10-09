@@ -28,19 +28,14 @@ const httpLink = new HttpLink({
 
 function createApolloClient({ locale } = { locale: null }) {
   const authMiddleware = new ApolloLink((operation, forward) => {
-    // Get the authentication token from local storage if it exists
-    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-    
-    // Set the authorization header if token exists
+    // Set locale header if provided
+    // Authentication is handled via cookies, so no Authorization header needed
     const headers = {
       ...(locale && { 'accept-language': locale }),
-      ...(token && { 'Authorization': `JWT ${token}` }),
     };
     
     operation.setContext({ 
       headers,
-      // Ensure we're not using the cache for auth-related operations
-      fetchPolicy: 'network-only',
     });
     return forward(operation);
   });
@@ -76,17 +71,7 @@ function createApolloClient({ locale } = { locale: null }) {
     },
   });
 
-  // Initialize the cache with the user data if available
-  if (typeof window !== 'undefined') {
-    const token = localStorage.getItem('token');
-    if (token) {
-      // This will trigger a refetch of the current user
-      client.resetStore().catch(() => {
-        // Clear the token if it's invalid
-        localStorage.removeItem('token');
-      });
-    }
-  }
+  // Initialize the cache - authentication is handled via cookies
 
   return client;
 }

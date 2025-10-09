@@ -11,6 +11,7 @@ import ProductList from '../modules/products/components/ProductList';
 import CategoryList from '../modules/assortment/components/CategoryList';
 import Loading from '../modules/common/components/Loading';
 import ListViewWrapper from '../modules/common/components/ListViewWrapper';
+import AdvertisementCarousel from '../modules/common/components/AdvertisementCarousel';
 import { Squares2X2Icon, ListBulletIcon } from '@heroicons/react/20/solid';
 
 const Home = () => {
@@ -29,6 +30,19 @@ const Home = () => {
     <>
       <MetaTags title={formatMessage({ id: 'home', defaultMessage: 'Home' })} />
       <div className="min-h-screen bg-white">
+        {/* Advertisement Carousel Section */}
+        <section className="w-screen ml-[calc(-50vw+50%)] mb-8">
+          <AdvertisementCarousel
+            autoPlay={true}
+            slideInterval={4000}
+            showThumbnails={false}
+            showBullets={true}
+            showNav={true}
+            limit={3}
+            className="shadow-lg"
+          />
+        </section>
+
         {/* Categories Section - Placed directly below header */}
         <section className="py-16 bg-gray-50 dark:bg-slate-900">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
