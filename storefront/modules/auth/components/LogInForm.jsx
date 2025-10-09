@@ -9,6 +9,7 @@ import { useAppContext } from "../../common/components/AppContextWrapper";
 import useGenerateLoginCredentials from "../hooks/useGenerateLoginCredentials";
 import useLoginWithPassword from "../hooks/useLoginWithPassword";
 import useLoginWithWebAuthn from "../hooks/useLoginWithWebAuthn";
+import AzureB2C from "./AzureB2C";
 
 const GetCurrentStep = ({
   step,
@@ -277,6 +278,7 @@ const LogInForm = () => {
                   />
                 </div>
               </form>
+              <AzureB2C></AzureB2C>
               <div className="text-sm text-slate-800 dark:text-slate-200">
                 {formatMessage({
                   id: "dont-have-account",

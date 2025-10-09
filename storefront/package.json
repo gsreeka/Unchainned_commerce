@@ -11,6 +11,10 @@
   },
   "dependencies": {
     "@apollo/client": "^4.0.4",
+    "@azure/msal-browser": "^4.24.1",
+    "@azure/msal-common": "^15.13.0",
+    "@azure/msal-node": "^3.8.0",
+    "@azure/msal-react": "^3.0.20",
     "@coingecko/cryptoformat": "^0.8.2",
     "@formatjs/intl-datetimeformat": "^6.18.0",
     "@formatjs/intl-numberformat": "^8.15.4",

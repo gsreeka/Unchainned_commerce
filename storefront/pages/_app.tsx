@@ -7,6 +7,7 @@ import { useApollo } from '../modules/apollo/apolloClient';
 import Layout from '../modules/layout/components/Layout';
 import getMessages from '../modules/i18n/utils/getMessages';
 import { AppContextWrapper } from '../modules/common/components/AppContextWrapper';
+import MsalProviderClient from '../modules/common/components/MsalProviderClient';
 
 import '../styles/globals.css';
 import PushNotificationWrapper from '../modules/context/push-notification/PushNotificationWrapper';
@@ -22,12 +23,14 @@ const UnchainedApp = ({ Component, pageProps, router }) => {
     <IntlWrapper locale={router.locale} messages={messages} key="intl-provider">
       <AppContextWrapper>
         <ApolloProvider client={apollo}>
-          <PushNotificationWrapper>
-            <Toaster />
-            <Layout hasHeroSection={hasHeroSection}>
-              <Component {...pageProps} />
-            </Layout>
-          </PushNotificationWrapper>
+          <MsalProviderClient>
+            <PushNotificationWrapper>
+              <Toaster />
+              <Layout hasHeroSection={hasHeroSection}>
+                <Component {...pageProps} />
+              </Layout>
+            </PushNotificationWrapper>
+          </MsalProviderClient>
         </ApolloProvider>
       </AppContextWrapper>
     </IntlWrapper>

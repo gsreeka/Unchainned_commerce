@@ -27,9 +27,22 @@ const httpLink = new HttpLink({
 
 function createApolloClient({ locale }) {
   const middlewareLink = new ApolloLink((operation, forward) => {
-    const headers = {};
+    const headers: Record<string, string> = {};
+    // Add accept-language when provided
     if (locale) {
       headers['accept-language'] = locale;
+    }
+
+    // Add Authorization header from localStorage (only available in browser)
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        const token = window.localStorage.getItem('azure_access_token');
+        if (token) {
+          headers['authorization'] = `Bearer ${token}`;
+        }
+      }
+    } catch (e) {
+      // Accessing localStorage can throw (e.g., in some privacy modes). Fail silently.
     }
     operation.setContext({ headers });
     return forward(operation);

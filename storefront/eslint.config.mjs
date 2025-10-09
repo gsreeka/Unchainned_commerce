@@ -5,6 +5,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import js from '@eslint/js';
 import { FlatCompat } from '@eslint/eslintrc';
+import { EndOfLineState } from 'typescript';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -34,7 +35,7 @@ export default defineConfig([
     extends: compat.extends(
       'eslint:recommended',
       'plugin:react/recommended',
-      'plugin:prettier/recommended',
+      // 'plugin:prettier/recommended',
       'next',
       'plugin:@typescript-eslint/recommended',
     ),
@@ -71,16 +72,17 @@ export default defineConfig([
     },
 
     rules: {
-      'prettier/prettier': [
-        'error',
-        {
-          printWidth: 80,
-          semi: true,
-          trailingComma: 'all',
-          singleQuote: true,
-          proseWrap: 'always',
-        },
-      ],
+      // 'prettier/prettier': [
+      //   'error',
+      //   {
+      //     printWidth: 80,
+      //     semi: true,
+      //     trailingComma: 'all',
+      //     singleQuote: true,
+      //     proseWrap: 'always',
+      //     EndOfLineState: EndOfLineState.InMultiLineCommentTrivia
+      //   },
+      // ],
       '@typescript-eslint/ban-ts-comment': 'off',
       '@ts-expect-error': 'off',
       'no-unused-vars': 'off',

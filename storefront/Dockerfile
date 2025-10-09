@@ -18,8 +18,7 @@ ARG UNCHAINED_ENDPOINT=http://localhost:4010/graphql
 ENV UNCHAINED_ENDPOINT=$UNCHAINED_ENDPOINT
 ENV NEXT_TELEMETRY_DISABLED="1"
  
-RUN npm run build && \
-    rm -Rf node_modules
+RUN npm run build && rm -Rf node_modules
  
 FROM node:22-alpine AS runtime
  
@@ -28,7 +27,7 @@ WORKDIR /usr/src/app
 ENV NEXT_TELEMETRY_DISABLED="1"
 ENV TZ="Europe/Amsterdam"
 ENV NODE_ENV="production"
-ENV NODE_ICU_DATA node_modules/full-icu
+ENV NODE_ICU_DATA=node_modules/full-icu
  
 # Install full-icu
 RUN npm install full-icu

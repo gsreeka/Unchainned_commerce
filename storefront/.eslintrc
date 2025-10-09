@@ -1,7 +1,7 @@
 {
   "root": true,
   "plugins": ["formatjs"],
-  "extends": ["next", "plugin:prettier/recommended"],
+  "extends": ["next"],
   "parserOptions": {
     "project": "./tsconfig.json",
     "requireConfigFile": false,
@@ -16,7 +16,8 @@
     "es6": true,
     "mocha": true,
   },
-  "rules": {},
+  "rules": {
+  },
   "settings": {
     "import/resolver": {
       "node": {
