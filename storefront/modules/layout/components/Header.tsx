@@ -7,6 +7,7 @@ import { useState, useEffect } from 'react';
 import { Bars3Icon } from '@heroicons/react/20/solid';
 import LoginCart from '../../auth/components/LoginCart';
 import SideCart from '../../cart/components/SideCart';
+import GlobalSearchBar from '../../common/components/GlobalSearchBar';
 
 import { useAppContext } from '../../common/components/AppContextWrapper';
 
@@ -85,6 +86,11 @@ const Header: React.FC<HeaderProps> = ({
                 <div className="text-lg font-medium leading-tight">Manufacturers Association</div>
               </div>
             </Link>
+          </div>
+
+          {/* Search Bar */}
+          <div className="flex-1 max-w-md mx-8">
+            <GlobalSearchBar className="w-full" />
           </div>
 
           {/* Cart and Login */}

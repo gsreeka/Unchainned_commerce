@@ -34,6 +34,11 @@ services:
       - DISABLE_WORKER=true
       - PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
       - PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+      # Azure AI Search Configuration
+      - AZURE_SEARCH_SERVICE_NAME=nema-store-search
+      - AZURE_SEARCH_API_KEY=your-azure-search-api-key
+      - AZURE_SEARCH_INDEX_NAME=products-index
+      - AZURE_SEARCH_ENDPOINT=https://nema-store-search.search.windows.net
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:

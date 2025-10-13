@@ -35,6 +35,7 @@
   },
   "dependencies": {
     "@ai-sdk/openai": "^2.0.26",
+    "@azure/search-documents": "^12.1.0",
     "@fastify/cookie": "^11.0.2",
     "@fastify/multipart": "^9.2.1",
     "@fastify/session": "^11.1.0",
